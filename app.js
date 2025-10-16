@@ -15,6 +15,7 @@ const db = firebase.firestore();
 // --- Elementos ---
 const bookForm = document.getElementById('book-form');
 const booksDiv = document.getElementById('books');
+const buscaInput = document.getElementById('buscaLivro');
 
 // --- Login/Logout ---
 const loginBtn = document.createElement('button');
@@ -112,23 +113,19 @@ db.collection('books').orderBy('createdAt','desc').onSnapshot(snapshot => {
   });
 });
 
-// --- Função de busca ---
-function filtrarLivros() {
-  const filtro = document.getElementById('buscaLivro').value.toLowerCase();
+// --- Busca de livros ---
+buscaInput.addEventListener('keyup', () => {
+  const filtro = buscaInput.value.toLowerCase();
   const livros = document.querySelectorAll('.book-card');
 
   livros.forEach(livro => {
     const title = livro.querySelector('h3')?.textContent.toLowerCase() || '';
     const author = livro.querySelector('strong')?.textContent.toLowerCase() || '';
-    if(title.includes(filtro) || author.includes(filtro)){
-      livro.style.display = 'block';
-    } else {
-      livro.style.display = 'none';
-    }
+    livro.style.display = (title.includes(filtro) || author.includes(filtro)) ? 'block' : 'none';
   });
-}
+});
 
-// --- Função de escape HTML ---
+// --- Escape HTML ---
 function escapeHtml(str){
   if(!str) return '';
   return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
