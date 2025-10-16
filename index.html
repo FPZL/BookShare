@@ -22,13 +22,15 @@
     <form id="book-form">
       <input id="title" placeholder="Título" required />
       <input id="author" placeholder="Autor" required />
-      <textarea id="description" placeholder="Descrição(Contato)" rows="3"></textarea>
+      <input id="category" placeholder="Categoria" />
+      <input id="contact" placeholder="Contato (e-mail ou telefone)" />
+      <textarea id="description" placeholder="Descrição adicional" rows="3"></textarea>
       <button type="submit">Adicionar</button>
     </form>
   </section>
 
   <section class="search-book">
-    <input type="text" id="buscaLivro" placeholder="Buscar por título ou autor...">
+    <input type="text" id="buscaLivro" placeholder="Buscar por título, autor ou categoria...">
   </section>
 
   <section class="books-list">
