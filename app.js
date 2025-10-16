@@ -16,6 +16,14 @@ const db = firebase.firestore();
 const bookForm = document.getElementById('book-form');
 const booksDiv = document.getElementById('books');
 
+// --- Adiciona campo de busca ---
+const searchInput = document.createElement('input');
+searchInput.type = 'text';
+searchInput.placeholder = 'Buscar por título ou autor...';
+searchInput.id = 'search-books';
+searchInput.style.marginBottom = '20px';
+booksDiv.parentNode.insertBefore(searchInput, booksDiv);
+
 // --- Login/Logout ---
 const loginBtn = document.createElement('button');
 loginBtn.textContent = 'Entrar com Google';
@@ -32,7 +40,6 @@ loginBtn.onclick = () => auth.signInWithPopup(provider);
 logoutBtn.onclick = () => auth.signOut();
 
 let currentUser = null;
-
 auth.onAuthStateChanged(user => {
   currentUser = user;
   if(user){
@@ -68,12 +75,42 @@ bookForm.addEventListener('submit', async (e) => {
   bookForm.reset();
 });
 
+// --- Armazenar todos os livros ---
+let allBooks = [];
+
 // --- Listar livros ---
 db.collection('books').orderBy('createdAt','desc').onSnapshot(snapshot => {
-  booksDiv.innerHTML = '';
+  allBooks = [];
   snapshot.forEach(doc => {
     const data = doc.data();
-    const id = doc.id;
+    data.id = doc.id;
+    allBooks.push(data);
+  });
+
+  filtrarEListarLivros();
+});
+
+// --- Filtro de busca em tempo real ---
+searchInput.addEventListener('input', filtrarEListarLivros);
+
+function filtrarEListarLivros() {
+  const termo = searchInput.value.toLowerCase();
+
+  const livrosFiltrados = allBooks.filter(livro => {
+    return (
+      livro.title.toLowerCase().includes(termo) ||
+      livro.author.toLowerCase().includes(termo)
+    );
+  });
+
+  mostrarLivros(livrosFiltrados);
+}
+
+// --- Função para exibir livros ---
+function mostrarLivros(livros) {
+  booksDiv.innerHTML = '';
+  livros.forEach(data => {
+    const id = data.id;
     const div = document.createElement('div');
     div.className = 'book-card';
 
@@ -85,7 +122,6 @@ db.collection('books').orderBy('createdAt','desc').onSnapshot(snapshot => {
       <small>Adicionado por: ${escapeHtml(data.userName||'Usuário')}</small>
     `;
 
-    // Só o dono pode editar/remover
     if(currentUser && currentUser.uid === data.uid){
       const actions = document.createElement('div');
       actions.className = 'book-actions';
@@ -110,7 +146,7 @@ db.collection('books').orderBy('createdAt','desc').onSnapshot(snapshot => {
 
     booksDiv.appendChild(div);
   });
-});
+}
 
 function escapeHtml(str){
   if(!str) return '';
