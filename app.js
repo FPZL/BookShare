@@ -54,11 +54,15 @@ bookForm.addEventListener('submit', async (e) => {
 
   const title = document.getElementById('title').value.trim();
   const author = document.getElementById('author').value.trim();
+  const category = document.getElementById('category').value.trim();
+  const contact = document.getElementById('contact').value.trim();
   const description = document.getElementById('description').value.trim();
 
   await db.collection('books').add({
     title,
     author,
+    category,
+    contact,
     description,
     status: 'available',
     uid: currentUser.uid,
@@ -81,6 +85,8 @@ db.collection('books').orderBy('createdAt','desc').onSnapshot(snapshot => {
     div.innerHTML = `
       <h3>${escapeHtml(data.title)}</h3>
       <div><strong>${escapeHtml(data.author)}</strong></div>
+      ${data.category ? `<p>Categoria: ${escapeHtml(data.category)}</p>` : ''}
+      ${data.contact ? `<p>Contato: ${escapeHtml(data.contact)}</p>` : ''}
       <p>${escapeHtml(data.description||'')}</p>
       <p>Status: ${data.status}</p>
       <small>Adicionado por: ${escapeHtml(data.userName||'Usuário')}</small>
@@ -121,7 +127,8 @@ buscaInput.addEventListener('keyup', () => {
   livros.forEach(livro => {
     const title = livro.querySelector('h3')?.textContent.toLowerCase() || '';
     const author = livro.querySelector('strong')?.textContent.toLowerCase() || '';
-    livro.style.display = (title.includes(filtro) || author.includes(filtro)) ? 'block' : 'none';
+    const category = livro.querySelector('p')?.textContent.toLowerCase() || ''; // pega a primeira <p>, que pode conter categoria
+    livro.style.display = (title.includes(filtro) || author.includes(filtro) || category.includes(filtro)) ? 'block' : 'none';
   });
 });
 
