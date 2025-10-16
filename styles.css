@@ -2,22 +2,26 @@
   --bg:#f7f7fb;
   --card:#fff;
   --accent:#2b6cb0;
+  --accent-hover:#2c5282;
+  --text:#333;
+  --border:#ddd;
 }
 
 body {
   margin:0;
   background:var(--bg);
   font-family:Inter,system-ui,sans-serif;
+  color: var(--text);
 }
 
 header {
-  background:linear-gradient(90deg,#2b6cb0,#2c5282);
+  background:linear-gradient(90deg,var(--accent),var(--accent-hover));
   color:#fff;
   padding:28px 20px;
   text-align:center;
 }
 
-/* 🔐 Login/Logout */
+/* Login/Logout */
 .auth {
   text-align:center;
   margin:16px 0;
@@ -36,7 +40,7 @@ header {
 }
 
 .auth button:hover {
-  background: #2c5282;
+  background: var(--accent-hover);
 }
 
 main {
@@ -51,7 +55,7 @@ main {
 .add-book,
 .books-list {
   background:var(--card);
-  padding:16px;
+  padding:20px;
   border-radius:12px;
   box-shadow:0 6px 18px rgba(0,0,0,0.06);
 }
@@ -59,12 +63,17 @@ main {
 .add-book { flex:0 0 320px; }
 .books-list { flex:1; }
 
-input, textarea, button {
+.add-book input,
+.add-book textarea,
+.books-list input,
+button {
   width:100%;
   margin-top:8px;
-  padding:8px;
+  padding:10px;
   border-radius:8px;
-  border:1px solid #ddd;
+  border:1px solid var(--border);
+  font-size:14px;
+  box-sizing:border-box;
 }
 
 button {
@@ -77,20 +86,47 @@ button {
   transition: background 0.3s;
 }
 
-button:hover { background:#2c5282; }
+button:hover { background: var(--accent-hover); }
 
-.book-card {
-  border-bottom:1px solid #eee;
-  padding:10px 0;
+/* Pesquisa */
+.books-list input {
+  margin-bottom:16px;
+  border:1px solid var(--accent);
+  font-size:15px;
 }
 
-.book-card h3 { margin:0 0 4px; }
-.book-card p { margin:4px 0; }
+/* Cards de livros */
+.book-card {
+  border-bottom:1px solid #eee;
+  padding:12px 8px;
+  transition: background 0.2s;
+  border-radius:8px;
+  margin-bottom:8px;
+  background:#fafafa;
+}
 
-.book-actions button { margin-right:8px; }
+.book-card:hover {
+  background:#f0f4f8;
+}
 
+.book-card h3 { margin:0 0 4px; font-size:18px; }
+.book-card p { margin:4px 0; font-size:14px; }
+.book-card small { display:block; color:#666; margin-top:4px; font-size:12px; }
+
+.book-actions {
+  margin-top:8px;
+}
+
+.book-actions button {
+  margin-right:8px;
+  font-size:13px;
+  padding:6px 10px;
+}
+
+/* Footer */
 footer {
   text-align:center;
   color:#666;
-  padding:8px;
+  padding:12px;
+  font-size:13px;
 }
