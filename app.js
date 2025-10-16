@@ -15,7 +15,7 @@ const db = firebase.firestore();
 // --- Elementos ---
 const bookForm = document.getElementById('book-form');
 const booksDiv = document.getElementById('books');
-const buscaInput = document.getElementById('buscaLivro');
+const buscaInput = document.getElementById('buscaLivro'); // agora dentro da seção de livros
 
 // --- Login/Logout ---
 const loginBtn = document.createElement('button');
@@ -127,7 +127,7 @@ buscaInput.addEventListener('keyup', () => {
   livros.forEach(livro => {
     const title = livro.querySelector('h3')?.textContent.toLowerCase() || '';
     const author = livro.querySelector('strong')?.textContent.toLowerCase() || '';
-    const category = livro.querySelector('p')?.textContent.toLowerCase() || ''; // pega a primeira <p>, que pode conter categoria
+    const category = livro.querySelector('p')?.textContent.toLowerCase() || '';
     livro.style.display = (title.includes(filtro) || author.includes(filtro) || category.includes(filtro)) ? 'block' : 'none';
   });
 });
