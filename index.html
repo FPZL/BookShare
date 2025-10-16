@@ -22,12 +22,14 @@
     <form id="book-form">
       <input id="title" placeholder="Título" required />
       <input id="author" placeholder="Autor" required />
-      <textarea id="description" placeholder="Descrição" rows="3"></textarea>
+      <textarea id="description" placeholder="Descrição(Contato)" rows="3"></textarea>
       <button type="submit">Adicionar</button>
     </form>
   </section>
-  <input type="text" id="buscaLivro" placeholder="Buscar por título ou autor..." onkeyup="filtrarLivros()">
-  <div id="listaLivros"></div>
+
+  <section class="search-book">
+    <input type="text" id="buscaLivro" placeholder="Buscar por título ou autor...">
+  </section>
 
   <section class="books-list">
     <h2>Livros</h2>
@@ -42,5 +44,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-
-
