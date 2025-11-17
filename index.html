@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Book Share</title>
+
 <link rel="stylesheet" href="styles.css" />
 
 <!-- Firebase -->
@@ -15,15 +16,12 @@
 <body>
 
 <header>
-  <!-- LOGO NO CANTO ESQUERDO -->
   <img src="logo.png" alt="Logo do Projeto">
-
   <h1>Biblioteca de Empréstimo</h1>
 </header>
 
 <main>
 
-  <!-- Formulário de adicionar livros -->
   <section class="add-book">
     <h2>Adicionar livro</h2>
 
@@ -37,13 +35,10 @@
     </form>
   </section>
 
-  <!-- Lista de livros -->
   <section class="books-list">
     <h2>Livros para empréstimo</h2>
 
-    <!-- Barra de pesquisa -->
     <input type="text" id="buscaLivro" placeholder="Buscar por título, autor ou categoria...">
-
     <div id="books"></div>
   </section>
 
@@ -52,4 +47,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-
