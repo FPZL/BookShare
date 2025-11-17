@@ -1,11 +1,11 @@
 :root {
   --bg:#faf7fb;
   --card:#fff;
-  --accent:#6e1e7c;        /* Roxo médio */
-  --accent-hover:#3b0a5d;  /* Roxo escuro */
+  --accent:#6e1e7c;        
+  --accent-hover:#3b0a5d;  
   --text:#2d1d2f;
   --border:#d8cbe2;
-  --logo:#b03a64;          /* Rosa vinho */
+  --logo:#b03a64;          
 }
 
 body {
@@ -15,7 +15,7 @@ body {
   color: var(--text);
 }
 
-/* HEADER COM LOGO */
+
 header {
   background:linear-gradient(90deg,var(--accent),var(--accent-hover));
   color:#fff;
@@ -24,22 +24,23 @@ header {
   align-items:center;
   justify-content:center;
   position:relative;
+  height:90px;
 }
 
 header img {
   position:absolute;
   left:20px;
-  width:55px;
+  width:90px;   
   height:auto;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 header h1 {
-  font-size:28px;
+  font-size:32px;
   margin:0;
 }
 
-/* Login/Logout */
+
 .auth {
   text-align:center;
   margin:16px 0;
@@ -107,14 +108,14 @@ button {
 
 button:hover { background: var(--accent-hover); }
 
-/* Pesquisa */
+
 .books-list input {
   margin-bottom:16px;
   border:1px solid var(--accent);
   font-size:15px;
 }
 
-/* Book Cards */
+
 .book-card {
   border-bottom:1px solid #eee;
   padding:12px 8px;
@@ -141,12 +142,4 @@ button:hover { background: var(--accent-hover); }
   margin-right:8px;
   font-size:13px;
   padding:6px 10px;
-}
-
-/* Footer */
-footer {
-  text-align:center;
-  color:#666;
-  padding:12px;
-  font-size:13px;
 }
