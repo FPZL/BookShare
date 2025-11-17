@@ -1,24 +1,42 @@
 :root {
-  --bg:#f7f7fb;
+  --bg:#faf7fb;
   --card:#fff;
-  --accent:#2b6cb0;
-  --accent-hover:#2c5282;
-  --text:#333;
-  --border:#ddd;
+  --accent:#6e1e7c;        /* Roxo médio */
+  --accent-hover:#3b0a5d;  /* Roxo escuro */
+  --text:#2d1d2f;
+  --border:#d8cbe2;
+  --logo:#b03a64;          /* Rosa vinho */
 }
 
 body {
   margin:0;
   background:var(--bg);
-  font-family:Inter,system-ui,sans-serif;
+  font-family: Inter, system-ui, sans-serif;
   color: var(--text);
 }
 
+/* HEADER COM LOGO */
 header {
   background:linear-gradient(90deg,var(--accent),var(--accent-hover));
   color:#fff;
-  padding:28px 20px;
-  text-align:center;
+  padding:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+
+header img {
+  position:absolute;
+  left:20px;
+  width:55px;
+  height:auto;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+header h1 {
+  font-size:28px;
+  margin:0;
 }
 
 /* Login/Logout */
@@ -57,7 +75,8 @@ main {
   background:var(--card);
   padding:20px;
   border-radius:12px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.06);
+  border-left:5px solid var(--accent);
+  box-shadow:0 6px 18px rgba(0,0,0,0.08);
 }
 
 .add-book { flex:0 0 320px; }
@@ -95,23 +114,24 @@ button:hover { background: var(--accent-hover); }
   font-size:15px;
 }
 
-/* Cards de livros */
+/* Book Cards */
 .book-card {
   border-bottom:1px solid #eee;
   padding:12px 8px;
   transition: background 0.2s;
   border-radius:8px;
   margin-bottom:8px;
-  background:#fafafa;
+  background:#f7eef8;
+  border-left:4px solid var(--accent);
 }
 
 .book-card:hover {
-  background:#f0f4f8;
+  background:#f3e2f7;
 }
 
 .book-card h3 { margin:0 0 4px; font-size:18px; }
 .book-card p { margin:4px 0; font-size:14px; }
-.book-card small { display:block; color:#666; margin-top:4px; font-size:12px; }
+.book-card small { display:block; color:#555; margin-top:4px; font-size:12px; }
 
 .book-actions {
   margin-top:8px;
