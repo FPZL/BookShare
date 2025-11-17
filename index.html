@@ -11,15 +11,22 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
+
 <body>
+
 <header>
+  <!-- LOGO NO CANTO ESQUERDO -->
+  <img src="logo.png" alt="Logo do Projeto">
+
   <h1>Biblioteca de Empréstimo</h1>
 </header>
 
 <main>
+
   <!-- Formulário de adicionar livros -->
   <section class="add-book">
     <h2>Adicionar livro</h2>
+
     <form id="book-form">
       <input id="title" placeholder="Título" required />
       <input id="author" placeholder="Autor" required />
@@ -33,20 +40,19 @@
   <!-- Lista de livros -->
   <section class="books-list">
     <h2>Livros para empréstimo</h2>
-    <!-- Barra de pesquisa fica dentro da seção -->
+
+    <!-- Barra de pesquisa -->
     <input type="text" id="buscaLivro" placeholder="Buscar por título, autor ou categoria...">
+
     <div id="books"></div>
   </section>
+
 </main>
 
 <footer>
-  <small>Feito Pelo Chat GPT</small>
+  <small>Feito pelo ChatGPT</small>
 </footer>
 
 <script src="app.js"></script>
 </body>
 </html>
-
-
-
-
