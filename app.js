@@ -14,6 +14,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 let currentUser = null;
+let perfilVisitadoUid = null;
 
 // ================= ELEMENTOS =================
 const bookForm = document.getElementById('book-form');
@@ -36,6 +37,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.getElementById(btn.dataset.tab).classList.add('active');
 
     if(btn.dataset.tab === 'perfil'){
+      perfilVisitadoUid = null; // volta para o próprio perfil
       carregarPerfil();
     }
   });
@@ -111,7 +113,6 @@ function listarLivros(){
       snapshot.forEach(doc => {
         const data = doc.data();
         const id = doc.id;
-
         const rating = calcularMedia(data.ratings);
 
         const div = document.createElement('div');
@@ -133,10 +134,15 @@ function listarLivros(){
             ⭐ ${rating.media} (${rating.total} avaliações)
           </div>
 
-          <small>Adicionado por: ${escapeHtml(data.userName || '')}</small>
+          <small>
+            Adicionado por:
+            <span class="user-link" data-uid="${data.uid}">
+              ${escapeHtml(data.userName || 'Usuário')}
+            </span>
+          </small>
         `;
 
-        // Avaliação
+        // Avaliar livro
         if(currentUser){
           div.querySelectorAll('.star').forEach(star => {
             star.addEventListener('click', async () => {
@@ -147,6 +153,20 @@ function listarLivros(){
             });
           });
         }
+
+        // Clique no nome → perfil público
+        const userLink = div.querySelector('.user-link');
+        userLink.addEventListener('click', () => {
+          perfilVisitadoUid = userLink.dataset.uid;
+
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+          document.querySelector('[data-tab="perfil"]').classList.add('active');
+          document.getElementById('perfil').classList.add('active');
+
+          carregarPerfil();
+        });
 
         // Botões do dono
         if(currentUser && data.uid === currentUser.uid){
@@ -185,16 +205,24 @@ function listarLivros(){
 
 // ================= PERFIL =================
 function carregarPerfil(){
-  if(!currentUser) return;
+  const uid = perfilVisitadoUid || (currentUser && currentUser.uid);
+  if(!uid) return;
 
-  perfilNome.textContent = currentUser.displayName;
-  perfilEmail.textContent = currentUser.email;
+  const isMeuPerfil = currentUser && uid === currentUser.uid;
+
+  perfilNome.textContent = isMeuPerfil
+    ? currentUser.displayName
+    : 'Perfil do usuário';
+
+  perfilEmail.textContent = isMeuPerfil
+    ? currentUser.email
+    : 'Email privado';
 
   meusLivrosUl.innerHTML = '';
   historicoUl.innerHTML = '';
 
   db.collection('books')
-    .where('uid','==',currentUser.uid)
+    .where('uid','==',uid)
     .get()
     .then(snapshot => {
       if(snapshot.empty){
@@ -203,17 +231,20 @@ function carregarPerfil(){
 
       snapshot.forEach(doc => {
         const data = doc.data();
-
         const li = document.createElement('li');
         li.textContent = `${data.title} (${data.status})`;
         meusLivrosUl.appendChild(li);
 
-        if(data.status === 'borrowed'){
+        if(isMeuPerfil && data.status === 'borrowed'){
           const h = document.createElement('li');
           h.textContent = `Emprestado: ${data.title}`;
           historicoUl.appendChild(h);
         }
       });
+
+      if(!isMeuPerfil){
+        historicoUl.innerHTML = '<li>Histórico privado</li>';
+      }
     });
 }
 
