@@ -27,7 +27,7 @@ const perfilEmail = document.getElementById('perfil-email');
 const meusLivrosUl = document.getElementById('meus-livros');
 const historicoUl = document.getElementById('historico-emprestimos');
 
-// Modal denúncia (HTML já existe)
+// Modal denúncia
 const reportModal = document.getElementById('report-modal');
 const reportInfo = document.getElementById('report-info');
 const reportText = document.getElementById('report-text');
@@ -45,7 +45,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
 
-    if(btn.dataset.tab === 'perfil'){
+    if (btn.dataset.tab === 'perfil') {
       perfilVisitadoUid = null;
       carregarPerfil();
     }
@@ -65,16 +65,38 @@ bookForm.parentNode.insertBefore(logoutBtn, bookForm);
 
 const provider = new firebase.auth.GoogleAuthProvider();
 
-loginBtn.onclick = () => auth.signInWithPopup(provider);
+loginBtn.onclick = async () => {
+  const result = await auth.signInWithPopup(provider);
+
+  // 🔐 Restrição UNIOESTE (MINHA PARTE)
+  if (!result.user.email.endsWith('@unioeste.br')) {
+    alert('Use apenas email institucional da UNIOESTE');
+    await auth.signOut();
+  }
+};
+
 logoutBtn.onclick = () => auth.signOut();
 
 // ================= AUTH =================
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
   currentUser = user;
 
   loginBtn.style.display = user ? 'none' : 'inline-block';
   logoutBtn.style.display = user ? 'inline-block' : 'none';
   bookForm.style.display = user ? 'block' : 'none';
+
+  // Cria perfil base (MINHA PARTE – não interfere)
+  if (user) {
+    const ref = db.collection('users').doc(user.uid);
+    if (!(await ref.get()).exists) {
+      await ref.set({
+        name: user.displayName,
+        email: user.email,
+        points: 0,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+  }
 
   listarLivros();
 });
@@ -82,7 +104,7 @@ auth.onAuthStateChanged(user => {
 // ================= ADICIONAR LIVRO =================
 bookForm.addEventListener('submit', async e => {
   e.preventDefault();
-  if(!currentUser) return alert('Faça login');
+  if (!currentUser) return alert('Faça login');
 
   await db.collection('books').add({
     title: title.value.trim(),
@@ -101,9 +123,9 @@ bookForm.addEventListener('submit', async e => {
 });
 
 // ================= LISTAR LIVROS =================
-function listarLivros(){
+function listarLivros() {
   db.collection('books')
-    .orderBy('createdAt','desc')
+    .orderBy('createdAt', 'desc')
     .onSnapshot(snapshot => {
       booksDiv.innerHTML = '';
 
@@ -142,12 +164,12 @@ function listarLivros(){
         `;
 
         // Avaliação
-        if(currentUser){
+        if (currentUser) {
           div.querySelectorAll('.star').forEach(star => {
             star.onclick = () => {
               db.collection('books').doc(id).set({
                 ratings: { [currentUser.uid]: Number(star.dataset.value) }
-              }, { merge:true });
+              }, { merge: true });
             };
           });
         }
@@ -159,7 +181,7 @@ function listarLivros(){
         };
 
         // Botões do dono
-        if(currentUser && data.uid === currentUser.uid){
+        if (currentUser && data.uid === currentUser.uid) {
           const actions = document.createElement('div');
           actions.className = 'book-actions';
 
@@ -169,16 +191,23 @@ function listarLivros(){
               ? 'Marcar como emprestado'
               : 'Marcar como devolvido';
 
-          toggleBtn.onclick = () =>
-            db.collection('books').doc(id).update({
-              status: data.status === 'available' ? 'borrowed' : 'available'
-            });
+          toggleBtn.onclick = async () => {
+            const novo = data.status === 'available' ? 'borrowed' : 'available';
+            await db.collection('books').doc(id).update({ status: novo });
+
+            // Pontos (MINHA PARTE)
+            if (novo === 'borrowed') {
+              await db.collection('users').doc(currentUser.uid).update({
+                points: firebase.firestore.FieldValue.increment(10)
+              });
+            }
+          };
 
           const delBtn = document.createElement('button');
           delBtn.textContent = 'Remover';
-          delBtn.onclick = () => {
-            if(confirm('Remover este livro?')){
-              db.collection('books').doc(id).delete();
+          delBtn.onclick = async () => {
+            if (confirm('Remover este livro?')) {
+              await db.collection('books').doc(id).delete();
             }
           };
 
@@ -206,9 +235,9 @@ function listarLivros(){
 }
 
 // ================= PERFIL =================
-function carregarPerfil(){
+function carregarPerfil() {
   const uid = perfilVisitadoUid || currentUser?.uid;
-  if(!uid) return;
+  if (!uid) return;
 
   const meu = currentUser && uid === currentUser.uid;
 
@@ -219,10 +248,10 @@ function carregarPerfil(){
   historicoUl.innerHTML = '';
 
   db.collection('books')
-    .where('uid','==',uid)
+    .where('uid', '==', uid)
     .get()
     .then(snapshot => {
-      if(snapshot.empty){
+      if (snapshot.empty) {
         meusLivrosUl.innerHTML = '<li>Nenhum livro publicado</li>';
       }
 
@@ -230,12 +259,12 @@ function carregarPerfil(){
         const d = doc.data();
         meusLivrosUl.innerHTML += `<li>${d.title} (${d.status})</li>`;
 
-        if(meu && d.status === 'borrowed'){
+        if (meu && d.status === 'borrowed') {
           historicoUl.innerHTML += `<li>Emprestado: ${d.title}</li>`;
         }
       });
 
-      if(!meu){
+      if (!meu) {
         historicoUl.innerHTML = '<li>Histórico privado</li>';
       }
     });
@@ -250,27 +279,21 @@ buscaInput.onkeyup = () => {
 };
 
 // ================= MODAL DENÚNCIA =================
-cancelReport.onclick = () => {
-  reportModal.style.display = 'none';
-};
+cancelReport.onclick = () => reportModal.style.display = 'none';
 
 sendReport.onclick = () => {
   const motivo = reportText.value.trim();
-  if(!motivo) return alert('Descreva o motivo da denúncia');
+  if (!motivo) return alert('Descreva o motivo');
 
   const assunto = encodeURIComponent('Denúncia de livro no BookShare');
   const corpo = encodeURIComponent(
-`Olá,
-
-Foi realizada uma denúncia no sistema BookShare.
-
-Título: ${reportData.title}
-Autor do livro: ${reportData.author}
+`Livro: ${reportData.title}
+Autor: ${reportData.author}
 Publicado por: ${reportData.userName}
-UID do usuário: ${reportData.uid}
+UID: ${reportData.uid}
 ID do livro: ${reportData.id}
 
-Motivo da denúncia:
+Motivo:
 ${motivo}`
   );
 
@@ -281,18 +304,19 @@ ${motivo}`
 };
 
 // ================= AVALIAÇÃO =================
-function calcularMedia(r){
-  if(!r) return { media:0, total:0 };
+function calcularMedia(r) {
+  if (!r) return { media: 0, total: 0 };
   const v = Object.values(r);
-  if(!v.length) return { media:0, total:0 };
+  if (!v.length) return { media: 0, total: 0 };
   return {
-    media: (v.reduce((a,b)=>a+b,0) / v.length).toFixed(1),
+    media: (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1),
     total: v.length
   };
 }
 
 // ================= ESCAPE HTML =================
-function escapeHtml(str){
+function escapeHtml(str) {
+  if (!str) return '';
   return str.replace(/[&<>"']/g,
-    s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
 }
