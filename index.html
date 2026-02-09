@@ -3,47 +3,46 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BookShare</title>
+<title>Book Share</title>
+
 <link rel="stylesheet" href="styles.css" />
 
-
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
+
 <body>
 
-
 <header>
-<img src="logo.png" alt="Logo do Projeto">
-<h1>BookShare</h1>
+  <img src="logo.png" alt="Logo do Projeto">
+  <h1>BookShare</h1>
 </header>
-
 
 <main>
 
+  <section class="add-book">
+    <h2>Adicionar livro</h2>
 
-<section class="add-book">
-<h2>Adicionar livro</h2>
-<form id="book-form">
-<input id="title" placeholder="Título" required />
-<input id="author" placeholder="Autor" required />
-<input id="category" placeholder="Categoria" />
-<textarea id="description" placeholder="Descrição" rows="3"></textarea>
-<button type="submit">Adicionar</button>
-</form>
-</section>
+    <form id="book-form">
+      <input id="title" placeholder="Título" required />
+      <input id="author" placeholder="Autor" required />
+      <input id="category" placeholder="Categoria" />
+      <input id="contact" placeholder="Contato (e-mail ou telefone)" />
+      <textarea id="description" placeholder="Descrição adicional" rows="3"></textarea>
+      <button type="submit">Adicionar</button>
+    </form>
+  </section>
 
+  <section class="books-list">
+    <h2>Livros para empréstimo</h2>
 
-<section class="books-list">
-<h2>Livros para empréstimo</h2>
-<input id="buscaLivro" placeholder="Buscar livro..." />
-<div id="books"></div>
-</section>
-
+    <input type="text" id="buscaLivro" placeholder="Buscar por título, autor ou categoria...">
+    <div id="books"></div>
+  </section>
 
 </main>
-
 
 <script src="app.js"></script>
 </body>
