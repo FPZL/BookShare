@@ -102,13 +102,17 @@ function carregarPerfil(){
 // --- Adicionar livro ---
 bookForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if(!currentUser) return alert('Faça login para adicionar livros');
 
-  const title = titleInput.value.trim();
-  const author = authorInput.value.trim();
-  const category = categoryInput.value.trim();
-  const contact = contactInput.value.trim();
-  const description = descriptionInput.value.trim();
+  if(!currentUser){
+    alert('Faça login para adicionar livros');
+    return;
+  }
+
+  const title = document.getElementById('title').value.trim();
+  const author = document.getElementById('author').value.trim();
+  const category = document.getElementById('category').value.trim();
+  const contact = document.getElementById('contact').value.trim();
+  const description = document.getElementById('description').value.trim();
 
   await db.collection('books').add({
     title,
@@ -185,3 +189,4 @@ function escapeHtml(str){
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])
   );
 }
+
