@@ -1,4 +1,4 @@
-// --- Firebase ---
+// ================= FIREBASE =================
 const firebaseConfig = {
   apiKey: "AIzaSyCRakMbIAtwkg7xlaxuyNfdVUADwx5S-0s",
   authDomain: "test-194d9.firebaseapp.com",
@@ -15,7 +15,7 @@ const db = firebase.firestore();
 
 let currentUser = null;
 
-// --- Elementos ---
+// ================= ELEMENTOS =================
 const bookForm = document.getElementById('book-form');
 const booksDiv = document.getElementById('books');
 const buscaInput = document.getElementById('buscaLivro');
@@ -26,7 +26,7 @@ const perfilEmail = document.getElementById('perfil-email');
 const meusLivrosUl = document.getElementById('meus-livros');
 const historicoUl = document.getElementById('historico-emprestimos');
 
-// --- Abas ---
+// ================= ABAS =================
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -41,7 +41,7 @@ document.querySelectorAll('.tab').forEach(btn => {
   });
 });
 
-// --- Login / Logout ---
+// ================= LOGIN / LOGOUT =================
 const loginBtn = document.createElement('button');
 loginBtn.textContent = 'Entrar com Google';
 
@@ -57,7 +57,7 @@ const provider = new firebase.auth.GoogleAuthProvider();
 loginBtn.onclick = () => auth.signInWithPopup(provider);
 logoutBtn.onclick = () => auth.signOut();
 
-// --- Auth ---
+// ================= AUTH =================
 auth.onAuthStateChanged(user => {
   currentUser = user;
 
@@ -74,7 +74,7 @@ auth.onAuthStateChanged(user => {
   listarLivros();
 });
 
-// --- Adicionar livro ---
+// ================= ADICIONAR LIVRO =================
 bookForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   if(!currentUser) return alert('Faça login');
@@ -91,16 +91,17 @@ bookForm.addEventListener('submit', async (e) => {
     category,
     contact,
     description,
-    status:'available',
+    status: 'available',
     uid: currentUser.uid,
     userName: currentUser.displayName,
+    ratings: {},
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
   bookForm.reset();
 });
 
-// --- Listar livros ---
+// ================= LISTAR LIVROS =================
 function listarLivros(){
   db.collection('books')
     .orderBy('createdAt','desc')
@@ -111,6 +112,8 @@ function listarLivros(){
         const data = doc.data();
         const id = doc.id;
 
+        const rating = calcularMedia(data.ratings);
+
         const div = document.createElement('div');
         div.className = 'book-card';
 
@@ -119,9 +122,33 @@ function listarLivros(){
           <strong>${escapeHtml(data.author)}</strong>
           <p>${escapeHtml(data.description || '')}</p>
           <p>Status: ${data.status}</p>
+
+          <div class="stars">
+            ${[1,2,3,4,5].map(n =>
+              `<span class="star ${currentUser && data.ratings && data.ratings[currentUser.uid] >= n ? 'active' : ''}" data-value="${n}">★</span>`
+            ).join('')}
+          </div>
+
+          <div class="rating-info">
+            ⭐ ${rating.media} (${rating.total} avaliações)
+          </div>
+
           <small>Adicionado por: ${escapeHtml(data.userName || '')}</small>
         `;
 
+        // Avaliação
+        if(currentUser){
+          div.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', async () => {
+              const value = Number(star.dataset.value);
+              await db.collection('books').doc(id).set({
+                ratings: { [currentUser.uid]: value }
+              }, { merge:true });
+            });
+          });
+        }
+
+        // Botões do dono
         if(currentUser && data.uid === currentUser.uid){
           const actions = document.createElement('div');
           actions.className = 'book-actions';
@@ -156,7 +183,7 @@ function listarLivros(){
     });
 }
 
-// --- Perfil ---
+// ================= PERFIL =================
 function carregarPerfil(){
   if(!currentUser) return;
 
@@ -190,7 +217,7 @@ function carregarPerfil(){
     });
 }
 
-// --- Busca ---
+// ================= BUSCA =================
 buscaInput.addEventListener('keyup', () => {
   const filtro = buscaInput.value.toLowerCase();
   document.querySelectorAll('.book-card').forEach(card => {
@@ -201,7 +228,19 @@ buscaInput.addEventListener('keyup', () => {
   });
 });
 
-// --- Escape HTML ---
+// ================= AVALIAÇÃO =================
+function calcularMedia(ratings){
+  if(!ratings) return { media: 0, total: 0 };
+
+  const valores = Object.values(ratings);
+  const total = valores.length;
+  if(total === 0) return { media: 0, total: 0 };
+
+  const soma = valores.reduce((a,b) => a + b, 0);
+  return { media: (soma / total).toFixed(1), total };
+}
+
+// ================= ESCAPE HTML =================
 function escapeHtml(str){
   if(!str) return '';
   return str.replace(/[&<>"']/g, s =>
