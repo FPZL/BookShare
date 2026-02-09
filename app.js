@@ -7,6 +7,7 @@ const firebaseConfig = {
   messagingSenderId: "709373549581",
   appId: "1:709373549581:web:069f53bd9d09a21fbc8944"
 };
+
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
@@ -15,11 +16,29 @@ const db = firebase.firestore();
 // --- Elementos ---
 const bookForm = document.getElementById('book-form');
 const booksDiv = document.getElementById('books');
-const buscaInput = document.getElementById('buscaLivro'); // agora dentro da seção de livros
+const buscaInput = document.getElementById('buscaLivro');
+
+// Perfil
+const perfilNome = document.getElementById('perfil-nome');
+const perfilEmail = document.getElementById('perfil-email');
+const meusLivrosUl = document.getElementById('meus-livros');
+const historicoUl = document.getElementById('historico-emprestimos');
+
+// --- Abas ---
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab, .tab-content')
+      .forEach(el => el.classList.remove('active'));
+
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
 
 // --- Login/Logout ---
 const loginBtn = document.createElement('button');
 loginBtn.textContent = 'Entrar com Google';
+
 const logoutBtn = document.createElement('button');
 logoutBtn.textContent = 'Sair';
 logoutBtn.style.display = 'none';
@@ -36,10 +55,13 @@ let currentUser = null;
 
 auth.onAuthStateChanged(user => {
   currentUser = user;
+
   if(user){
     loginBtn.style.display = 'none';
     logoutBtn.style.display = 'inline-block';
     bookForm.style.display = 'block';
+
+    carregarPerfil();
   } else {
     loginBtn.style.display = 'inline-block';
     logoutBtn.style.display = 'none';
@@ -47,16 +69,46 @@ auth.onAuthStateChanged(user => {
   }
 });
 
+// --- Perfil ---
+function carregarPerfil(){
+  perfilNome.textContent = currentUser.displayName;
+  perfilEmail.textContent = currentUser.email;
+
+  meusLivrosUl.innerHTML = '';
+  historicoUl.innerHTML = '';
+
+  db.collection('books')
+    .where('uid','==',currentUser.uid)
+    .onSnapshot(snapshot => {
+      meusLivrosUl.innerHTML = '';
+      historicoUl.innerHTML = '';
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+
+        const li = document.createElement('li');
+        li.textContent = `${data.title} (${data.status})`;
+        meusLivrosUl.appendChild(li);
+
+        if(data.status === 'borrowed'){
+          const h = document.createElement('li');
+          h.textContent = `Emprestado: ${data.title}`;
+          historicoUl.appendChild(h);
+        }
+      });
+    });
+}
+
 // --- Adicionar livro ---
 bookForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   if(!currentUser) return alert('Faça login para adicionar livros');
 
-  const title = document.getElementById('title').value.trim();
-  const author = document.getElementById('author').value.trim();
-  const category = document.getElementById('category').value.trim();
-  const contact = document.getElementById('contact').value.trim();
-  const description = document.getElementById('description').value.trim();
+  const title = titleInput.value.trim();
+  const author = authorInput.value.trim();
+  const category = categoryInput.value.trim();
+  const contact = contactInput.value.trim();
+  const description = descriptionInput.value.trim();
 
   await db.collection('books').add({
     title,
@@ -74,66 +126,62 @@ bookForm.addEventListener('submit', async (e) => {
 });
 
 // --- Listar livros ---
-db.collection('books').orderBy('createdAt','desc').onSnapshot(snapshot => {
-  booksDiv.innerHTML = '';
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    const id = doc.id;
-    const div = document.createElement('div');
-    div.className = 'book-card';
+db.collection('books')
+  .orderBy('createdAt','desc')
+  .onSnapshot(snapshot => {
+    booksDiv.innerHTML = '';
 
-    div.innerHTML = `
-      <h3>${escapeHtml(data.title)}</h3>
-      <div><strong>${escapeHtml(data.author)}</strong></div>
-      ${data.category ? `<p>Categoria: ${escapeHtml(data.category)}</p>` : ''}
-      ${data.contact ? `<p>Contato: ${escapeHtml(data.contact)}</p>` : ''}
-      <p>${escapeHtml(data.description||'')}</p>
-      <p>Status: ${data.status}</p>
-      <small>Adicionado por: ${escapeHtml(data.userName||'Usuário')}</small>
-    `;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const id = doc.id;
 
-    // Só o dono pode editar/remover
-    if(currentUser && currentUser.uid === data.uid){
-      const actions = document.createElement('div');
-      actions.className = 'book-actions';
+      const div = document.createElement('div');
+      div.className = 'book-card';
 
-      const toggleBtn = document.createElement('button');
-      toggleBtn.textContent = data.status === 'available' ? 'Marcar como emprestado' : 'Marcar como devolvido';
-      toggleBtn.onclick = async () => {
-        const newStatus = data.status === 'available' ? 'borrowed' : 'available';
-        await db.collection('books').doc(id).update({ status: newStatus });
-      };
+      div.innerHTML = `
+        <h3>${escapeHtml(data.title)}</h3>
+        <strong>${escapeHtml(data.author)}</strong>
+        <p>${escapeHtml(data.description || '')}</p>
+        <p>Status: ${data.status}</p>
+        <small>Adicionado por: ${escapeHtml(data.userName || '')}</small>
+      `;
 
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'Remover';
-      delBtn.onclick = async () => {
-        if(confirm('Remover este livro?')) await db.collection('books').doc(id).delete();
-      };
+      if(currentUser && currentUser.uid === data.uid){
+        const actions = document.createElement('div');
+        actions.className = 'book-actions';
 
-      actions.appendChild(toggleBtn);
-      actions.appendChild(delBtn);
-      div.appendChild(actions);
-    }
+        const toggleBtn = document.createElement('button');
+        toggleBtn.textContent =
+          data.status === 'available'
+            ? 'Marcar como emprestado'
+            : 'Marcar como devolvido';
 
-    booksDiv.appendChild(div);
+        toggleBtn.onclick = () =>
+          db.collection('books').doc(id)
+            .update({ status: data.status === 'available' ? 'borrowed' : 'available' });
+
+        actions.appendChild(toggleBtn);
+        div.appendChild(actions);
+      }
+
+      booksDiv.appendChild(div);
+    });
   });
-});
 
-// --- Busca de livros ---
+// --- Busca ---
 buscaInput.addEventListener('keyup', () => {
   const filtro = buscaInput.value.toLowerCase();
-  const livros = document.querySelectorAll('.book-card');
-
-  livros.forEach(livro => {
-    const title = livro.querySelector('h3')?.textContent.toLowerCase() || '';
-    const author = livro.querySelector('strong')?.textContent.toLowerCase() || '';
-    const category = livro.querySelector('p')?.textContent.toLowerCase() || '';
-    livro.style.display = (title.includes(filtro) || author.includes(filtro) || category.includes(filtro)) ? 'block' : 'none';
+  document.querySelectorAll('.book-card').forEach(card => {
+    card.style.display =
+      card.textContent.toLowerCase().includes(filtro)
+        ? 'block'
+        : 'none';
   });
 });
 
 // --- Escape HTML ---
 function escapeHtml(str){
-  if(!str) return '';
-  return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  return str.replace(/[&<>"']/g, s =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])
+  );
 }
