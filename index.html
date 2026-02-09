@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>BookShare UNIOESTE</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Book Share</title>
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -13,43 +13,32 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 
-<body data-page="home">
+<body>
 
 <header>
-  <h1>📚 BookShare UNIOESTE</h1>
-  <nav>
-    <a href="profile.html">Meu Perfil</a>
-    <a href="wishlist.html">Wishlist</a>
-    <a href="ranking.html">Ranking</a>
-  </nav>
+  <img src="logo.png" alt="Logo do Projeto">
+  <h1>BookShare</h1>
 </header>
 
 <main>
 
-  <!-- LOGIN -->
-  <div class="auth">
-    <button id="loginBtn">Entrar com Google</button>
-    <button id="logoutBtn">Sair</button>
-  </div>
-
-  <!-- ADICIONAR LIVRO -->
   <section class="add-book">
     <h2>Adicionar livro</h2>
 
     <form id="book-form">
-      <input id="title" placeholder="Título do livro" required>
-      <input id="author" placeholder="Autor" required>
-      <input id="category" placeholder="Categoria">
-      <input id="contact" placeholder="Contato (email ou WhatsApp)" required>
-      <textarea id="description" placeholder="Descrição"></textarea>
+      <input id="title" placeholder="Título" required />
+      <input id="author" placeholder="Autor" required />
+      <input id="category" placeholder="Categoria" />
+      <input id="contact" placeholder="Contato (e-mail ou telefone)" /> <!-- ✅ CONTATO -->
+      <textarea id="description" placeholder="Descrição adicional" rows="3"></textarea>
       <button type="submit">Adicionar</button>
     </form>
   </section>
 
-  <!-- LISTA -->
   <section class="books-list">
-    <h2>Livros disponíveis</h2>
-    <input id="buscaLivro" placeholder="Buscar por título, autor ou categoria">
+    <h2>Livros para empréstimo</h2>
+
+    <input type="text" id="buscaLivro" placeholder="Buscar por título, autor ou categoria...">
     <div id="books"></div>
   </section>
 
