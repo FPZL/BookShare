@@ -27,6 +27,15 @@ const perfilEmail = document.getElementById('perfil-email');
 const meusLivrosUl = document.getElementById('meus-livros');
 const historicoUl = document.getElementById('historico-emprestimos');
 
+// Modal denúncia (HTML já existe)
+const reportModal = document.getElementById('report-modal');
+const reportInfo = document.getElementById('report-info');
+const reportText = document.getElementById('report-text');
+const cancelReport = document.getElementById('cancel-report');
+const sendReport = document.getElementById('send-report');
+
+let reportData = null;
+
 // ================= ABAS =================
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -37,7 +46,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.getElementById(btn.dataset.tab).classList.add('active');
 
     if(btn.dataset.tab === 'perfil'){
-      perfilVisitadoUid = null; // volta para o próprio perfil
+      perfilVisitadoUid = null;
       carregarPerfil();
     }
   });
@@ -63,36 +72,24 @@ logoutBtn.onclick = () => auth.signOut();
 auth.onAuthStateChanged(user => {
   currentUser = user;
 
-  if(user){
-    loginBtn.style.display = 'none';
-    logoutBtn.style.display = 'inline-block';
-    bookForm.style.display = 'block';
-  } else {
-    loginBtn.style.display = 'inline-block';
-    logoutBtn.style.display = 'none';
-    bookForm.style.display = 'none';
-  }
+  loginBtn.style.display = user ? 'none' : 'inline-block';
+  logoutBtn.style.display = user ? 'inline-block' : 'none';
+  bookForm.style.display = user ? 'block' : 'none';
 
   listarLivros();
 });
 
 // ================= ADICIONAR LIVRO =================
-bookForm.addEventListener('submit', async (e) => {
+bookForm.addEventListener('submit', async e => {
   e.preventDefault();
   if(!currentUser) return alert('Faça login');
 
-  const title = document.getElementById('title').value.trim();
-  const author = document.getElementById('author').value.trim();
-  const category = document.getElementById('category').value.trim();
-  const contact = document.getElementById('contact').value.trim();
-  const description = document.getElementById('description').value.trim();
-
   await db.collection('books').add({
-    title,
-    author,
-    category,
-    contact,
-    description,
+    title: title.value.trim(),
+    author: author.value.trim(),
+    category: category.value.trim(),
+    contact: contact.value.trim(),
+    description: description.value.trim(),
     status: 'available',
     uid: currentUser.uid,
     userName: currentUser.displayName,
@@ -126,7 +123,9 @@ function listarLivros(){
 
           <div class="stars">
             ${[1,2,3,4,5].map(n =>
-              `<span class="star ${currentUser && data.ratings && data.ratings[currentUser.uid] >= n ? 'active' : ''}" data-value="${n}">★</span>`
+              `<span class="star ${
+                currentUser && data.ratings?.[currentUser.uid] >= n ? 'active' : ''
+              }" data-value="${n}">★</span>`
             ).join('')}
           </div>
 
@@ -137,36 +136,27 @@ function listarLivros(){
           <small>
             Adicionado por:
             <span class="user-link" data-uid="${data.uid}">
-              ${escapeHtml(data.userName || 'Usuário')}
+              ${escapeHtml(data.userName)}
             </span>
           </small>
         `;
 
-        // Avaliar livro
+        // Avaliação
         if(currentUser){
           div.querySelectorAll('.star').forEach(star => {
-            star.addEventListener('click', async () => {
-              const value = Number(star.dataset.value);
-              await db.collection('books').doc(id).set({
-                ratings: { [currentUser.uid]: value }
+            star.onclick = () => {
+              db.collection('books').doc(id).set({
+                ratings: { [currentUser.uid]: Number(star.dataset.value) }
               }, { merge:true });
-            });
+            };
           });
         }
 
-        // Clique no nome → perfil público
-        const userLink = div.querySelector('.user-link');
-        userLink.addEventListener('click', () => {
-          perfilVisitadoUid = userLink.dataset.uid;
-
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-          document.querySelector('[data-tab="perfil"]').classList.add('active');
-          document.getElementById('perfil').classList.add('active');
-
-          carregarPerfil();
-        });
+        // Perfil público
+        div.querySelector('.user-link').onclick = () => {
+          perfilVisitadoUid = data.uid;
+          document.querySelector('[data-tab="perfil"]').click();
+        };
 
         // Botões do dono
         if(currentUser && data.uid === currentUser.uid){
@@ -179,17 +169,16 @@ function listarLivros(){
               ? 'Marcar como emprestado'
               : 'Marcar como devolvido';
 
-          toggleBtn.onclick = async () => {
-            await db.collection('books').doc(id).update({
+          toggleBtn.onclick = () =>
+            db.collection('books').doc(id).update({
               status: data.status === 'available' ? 'borrowed' : 'available'
             });
-          };
 
           const delBtn = document.createElement('button');
           delBtn.textContent = 'Remover';
-          delBtn.onclick = async () => {
+          delBtn.onclick = () => {
             if(confirm('Remover este livro?')){
-              await db.collection('books').doc(id).delete();
+              db.collection('books').doc(id).delete();
             }
           };
 
@@ -198,6 +187,19 @@ function listarLivros(){
           div.appendChild(actions);
         }
 
+        // Denúncia
+        const reportBtn = document.createElement('button');
+        reportBtn.className = 'report-btn';
+        reportBtn.textContent = 'Denunciar 🚩';
+        reportBtn.onclick = () => {
+          reportData = { ...data, id };
+          reportInfo.textContent =
+            `Livro: ${data.title} — Publicado por: ${data.userName}`;
+          reportText.value = '';
+          reportModal.style.display = 'flex';
+        };
+        div.appendChild(reportBtn);
+
         booksDiv.appendChild(div);
       });
     });
@@ -205,18 +207,13 @@ function listarLivros(){
 
 // ================= PERFIL =================
 function carregarPerfil(){
-  const uid = perfilVisitadoUid || (currentUser && currentUser.uid);
+  const uid = perfilVisitadoUid || currentUser?.uid;
   if(!uid) return;
 
-  const isMeuPerfil = currentUser && uid === currentUser.uid;
+  const meu = currentUser && uid === currentUser.uid;
 
-  perfilNome.textContent = isMeuPerfil
-    ? currentUser.displayName
-    : 'Perfil do usuário';
-
-  perfilEmail.textContent = isMeuPerfil
-    ? currentUser.email
-    : 'Email privado';
+  perfilNome.textContent = meu ? currentUser.displayName : 'Perfil do usuário';
+  perfilEmail.textContent = meu ? currentUser.email : 'Email privado';
 
   meusLivrosUl.innerHTML = '';
   historicoUl.innerHTML = '';
@@ -230,81 +227,72 @@ function carregarPerfil(){
       }
 
       snapshot.forEach(doc => {
-        const data = doc.data();
-        const li = document.createElement('li');
-        li.textContent = `${data.title} (${data.status})`;
-        meusLivrosUl.appendChild(li);
+        const d = doc.data();
+        meusLivrosUl.innerHTML += `<li>${d.title} (${d.status})</li>`;
 
-        if(isMeuPerfil && data.status === 'borrowed'){
-          const h = document.createElement('li');
-          h.textContent = `Emprestado: ${data.title}`;
-          historicoUl.appendChild(h);
+        if(meu && d.status === 'borrowed'){
+          historicoUl.innerHTML += `<li>Emprestado: ${d.title}</li>`;
         }
       });
 
-      if(!isMeuPerfil){
+      if(!meu){
         historicoUl.innerHTML = '<li>Histórico privado</li>';
       }
     });
 }
 
 // ================= BUSCA =================
-buscaInput.addEventListener('keyup', () => {
-  const filtro = buscaInput.value.toLowerCase();
-  document.querySelectorAll('.book-card').forEach(card => {
-    card.style.display =
-      card.textContent.toLowerCase().includes(filtro)
-        ? 'block'
-        : 'none';
+buscaInput.onkeyup = () => {
+  const f = buscaInput.value.toLowerCase();
+  document.querySelectorAll('.book-card').forEach(c => {
+    c.style.display = c.textContent.toLowerCase().includes(f) ? 'block' : 'none';
   });
-});
+};
 
-// ================= AVALIAÇÃO =================
-function calcularMedia(ratings){
-  if(!ratings) return { media: 0, total: 0 };
+// ================= MODAL DENÚNCIA =================
+cancelReport.onclick = () => {
+  reportModal.style.display = 'none';
+};
 
-  const valores = Object.values(ratings);
-  const total = valores.length;
-  if(total === 0) return { media: 0, total: 0 };
+sendReport.onclick = () => {
+  const motivo = reportText.value.trim();
+  if(!motivo) return alert('Descreva o motivo da denúncia');
 
-  const soma = valores.reduce((a,b) => a + b, 0);
-  return { media: (soma / total).toFixed(1), total };
-}
-// ===== DENÚNCIA =====
-const reportBtn = document.createElement('button');
-reportBtn.className = 'report-btn';
-reportBtn.textContent = 'Denunciar 🚩';
-
-reportBtn.onclick = () => {
   const assunto = encodeURIComponent('Denúncia de livro no BookShare');
   const corpo = encodeURIComponent(
-    `Olá,
+`Olá,
 
-Gostaria de denunciar o seguinte livro:
+Foi realizada uma denúncia no sistema BookShare.
 
-Título: ${data.title}
-Autor do livro: ${data.author}
-Publicado por: ${data.userName}
-UID do usuário: ${data.uid}
-ID do livro: ${id}
+Título: ${reportData.title}
+Autor do livro: ${reportData.author}
+Publicado por: ${reportData.userName}
+UID do usuário: ${reportData.uid}
+ID do livro: ${reportData.id}
 
 Motivo da denúncia:
-(descreva aqui)
-
-Enviado automaticamente pelo sistema BookShare.`
+${motivo}`
   );
 
   window.location.href =
     `mailto:felipe.lemos@unioeste.br?subject=${assunto}&body=${corpo}`;
+
+  reportModal.style.display = 'none';
 };
 
-div.appendChild(reportBtn);
-
+// ================= AVALIAÇÃO =================
+function calcularMedia(r){
+  if(!r) return { media:0, total:0 };
+  const v = Object.values(r);
+  if(!v.length) return { media:0, total:0 };
+  return {
+    media: (v.reduce((a,b)=>a+b,0) / v.length).toFixed(1),
+    total: v.length
+  };
+}
 
 // ================= ESCAPE HTML =================
 function escapeHtml(str){
-  if(!str) return '';
-  return str.replace(/[&<>"']/g, s =>
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])
-  );
+  return str.replace(/[&<>"']/g,
+    s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
