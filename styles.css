@@ -237,6 +237,61 @@ button:hover { background: var(--accent-hover); }
 .report-btn:hover {
   background:#a81f1f;
 }
+/* ===== MODAL DENÚNCIA ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 420px;
+}
+
+.modal-content textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 8px;
+  resize: vertical;
+}
+
+.modal-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions .danger {
+  background: #c62828;
+  color: #fff;
+}
+
+.report-btn {
+  margin-top: 8px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.report-btn:hover {
+  background: #a81f1f;
+}
+
+
 
 
 
