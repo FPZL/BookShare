@@ -13,6 +13,8 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+let currentUser = null;
+
 // --- Elementos ---
 const bookForm = document.getElementById('book-form');
 const booksDiv = document.getElementById('books');
@@ -32,6 +34,10 @@ document.querySelectorAll('.tab').forEach(btn => {
 
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
+
+    if(btn.dataset.tab === 'perfil'){
+      carregarPerfil();
+    }
   });
 });
 
@@ -51,8 +57,7 @@ const provider = new firebase.auth.GoogleAuthProvider();
 loginBtn.onclick = () => auth.signInWithPopup(provider);
 logoutBtn.onclick = () => auth.signOut();
 
-let currentUser = null;
-
+// --- Auth ---
 auth.onAuthStateChanged(user => {
   currentUser = user;
 
@@ -60,22 +65,19 @@ auth.onAuthStateChanged(user => {
     loginBtn.style.display = 'none';
     logoutBtn.style.display = 'inline-block';
     bookForm.style.display = 'block';
-    carregarPerfil();
   } else {
     loginBtn.style.display = 'inline-block';
     logoutBtn.style.display = 'none';
     bookForm.style.display = 'none';
   }
+
+  listarLivros();
 });
 
 // --- Adicionar livro ---
 bookForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  if(!currentUser){
-    alert('Faça login para adicionar livros');
-    return;
-  }
+  if(!currentUser) return alert('Faça login');
 
   const title = document.getElementById('title').value.trim();
   const author = document.getElementById('author').value.trim();
@@ -89,7 +91,7 @@ bookForm.addEventListener('submit', async (e) => {
     category,
     contact,
     description,
-    status: 'available',
+    status:'available',
     uid: currentUser.uid,
     userName: currentUser.displayName,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -99,61 +101,94 @@ bookForm.addEventListener('submit', async (e) => {
 });
 
 // --- Listar livros ---
-db.collection('books')
-  .orderBy('createdAt','desc')
-  .onSnapshot(snapshot => {
-    booksDiv.innerHTML = '';
+function listarLivros(){
+  db.collection('books')
+    .orderBy('createdAt','desc')
+    .onSnapshot(snapshot => {
+      booksDiv.innerHTML = '';
 
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const id = doc.id;
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const id = doc.id;
 
-      const div = document.createElement('div');
-      div.className = 'book-card';
+        const div = document.createElement('div');
+        div.className = 'book-card';
 
-      div.innerHTML = `
-        <h3>${escapeHtml(data.title)}</h3>
-        <strong>${escapeHtml(data.author)}</strong>
-        <p>${escapeHtml(data.description || '')}</p>
-        <p>Status: ${data.status}</p>
-        <small>Adicionado por: ${escapeHtml(data.userName || '')}</small>
-      `;
+        div.innerHTML = `
+          <h3>${escapeHtml(data.title)}</h3>
+          <strong>${escapeHtml(data.author)}</strong>
+          <p>${escapeHtml(data.description || '')}</p>
+          <p>Status: ${data.status}</p>
+          <small>Adicionado por: ${escapeHtml(data.userName || '')}</small>
+        `;
 
-   if(currentUser && currentUser.uid === data.uid){
-  const actions = document.createElement('div');
-  actions.className = 'book-actions';
+        if(currentUser && data.uid === currentUser.uid){
+          const actions = document.createElement('div');
+          actions.className = 'book-actions';
 
-  // Botão emprestar/devolver
-  const toggleBtn = document.createElement('button');
-  toggleBtn.textContent =
-    data.status === 'available'
-      ? 'Marcar como emprestado'
-      : 'Marcar como devolvido';
+          const toggleBtn = document.createElement('button');
+          toggleBtn.textContent =
+            data.status === 'available'
+              ? 'Marcar como emprestado'
+              : 'Marcar como devolvido';
 
-  toggleBtn.onclick = async () => {
-    await db.collection('books').doc(id).update({
-      status: data.status === 'available' ? 'borrowed' : 'available'
+          toggleBtn.onclick = async () => {
+            await db.collection('books').doc(id).update({
+              status: data.status === 'available' ? 'borrowed' : 'available'
+            });
+          };
+
+          const delBtn = document.createElement('button');
+          delBtn.textContent = 'Remover';
+          delBtn.onclick = async () => {
+            if(confirm('Remover este livro?')){
+              await db.collection('books').doc(id).delete();
+            }
+          };
+
+          actions.appendChild(toggleBtn);
+          actions.appendChild(delBtn);
+          div.appendChild(actions);
+        }
+
+        booksDiv.appendChild(div);
+      });
     });
-  };
-
-  // 🔴 Botão remover
-  const delBtn = document.createElement('button');
-  delBtn.textContent = 'Remover';
-  delBtn.onclick = async () => {
-    if(confirm('Tem certeza que deseja remover este livro?')){
-      await db.collection('books').doc(id).delete();
-    }
-  };
-
-  actions.appendChild(toggleBtn);
-  actions.appendChild(delBtn);
-  div.appendChild(actions);
 }
 
+// --- Perfil ---
+function carregarPerfil(){
+  if(!currentUser) return;
 
-      booksDiv.appendChild(div);
+  perfilNome.textContent = currentUser.displayName;
+  perfilEmail.textContent = currentUser.email;
+
+  meusLivrosUl.innerHTML = '';
+  historicoUl.innerHTML = '';
+
+  db.collection('books')
+    .where('uid','==',currentUser.uid)
+    .get()
+    .then(snapshot => {
+      if(snapshot.empty){
+        meusLivrosUl.innerHTML = '<li>Nenhum livro publicado</li>';
+      }
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+
+        const li = document.createElement('li');
+        li.textContent = `${data.title} (${data.status})`;
+        meusLivrosUl.appendChild(li);
+
+        if(data.status === 'borrowed'){
+          const h = document.createElement('li');
+          h.textContent = `Emprestado: ${data.title}`;
+          historicoUl.appendChild(h);
+        }
+      });
     });
-  });
+}
 
 // --- Busca ---
 buscaInput.addEventListener('keyup', () => {
