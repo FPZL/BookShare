@@ -119,25 +119,37 @@ db.collection('books')
         <small>Adicionado por: ${escapeHtml(data.userName || '')}</small>
       `;
 
-      if(currentUser && currentUser.uid === data.uid){
-        const actions = document.createElement('div');
-        actions.className = 'book-actions';
+   if(currentUser && currentUser.uid === data.uid){
+  const actions = document.createElement('div');
+  actions.className = 'book-actions';
 
-        const toggleBtn = document.createElement('button');
-        toggleBtn.textContent =
-          data.status === 'available'
-            ? 'Marcar como emprestado'
-            : 'Marcar como devolvido';
+  // Botão emprestar/devolver
+  const toggleBtn = document.createElement('button');
+  toggleBtn.textContent =
+    data.status === 'available'
+      ? 'Marcar como emprestado'
+      : 'Marcar como devolvido';
 
-        toggleBtn.onclick = () => {
-          db.collection('books').doc(id).update({
-            status: data.status === 'available' ? 'borrowed' : 'available'
-          });
-        };
+  toggleBtn.onclick = async () => {
+    await db.collection('books').doc(id).update({
+      status: data.status === 'available' ? 'borrowed' : 'available'
+    });
+  };
 
-        actions.appendChild(toggleBtn);
-        div.appendChild(actions);
-      }
+  // 🔴 Botão remover
+  const delBtn = document.createElement('button');
+  delBtn.textContent = 'Remover';
+  delBtn.onclick = async () => {
+    if(confirm('Tem certeza que deseja remover este livro?')){
+      await db.collection('books').doc(id).delete();
+    }
+  };
+
+  actions.appendChild(toggleBtn);
+  actions.appendChild(delBtn);
+  div.appendChild(actions);
+}
+
 
       booksDiv.appendChild(div);
     });
