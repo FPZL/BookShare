@@ -1,76 +1,145 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
+:root {
+  --bg:#faf7fb;
+  --card:#fff;
+  --accent:#6e1e7c;        
+  --accent-hover:#3b0a5d;  
+  --text:#2d1d2f;
+  --border:#d8cbe2;
+  --logo:#b03a64;          
 }
+
+body {
+  margin:0;
+  background:var(--bg);
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--text);
+}
+
 
 header {
-  background: #6e1e7c;
-  color: white;
-  padding: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background:linear-gradient(90deg,var(--accent),var(--accent-hover));
+  color:#fff;
+  padding:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  height:90px;
 }
 
-header a {
-  color: white;
-  text-decoration: none;
-  margin-left: 10px;
+header img {
+  position:absolute;
+  left:20px;
+  width:90px;   
+  height:auto;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+header h1 {
+  font-size:32px;
+  margin:0;
+}
+
+
+.auth {
+  text-align:center;
+  margin:16px 0;
+}
+
+.auth button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  margin: 0 6px;
+  transition: background 0.3s;
+}
+
+.auth button:hover {
+  background: var(--accent-hover);
 }
 
 main {
-  padding: 20px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+  max-width:1100px;
+  margin:20px auto;
+  padding:20px;
 }
 
-.add-book, .books-list, .profile-card, section {
-  background: white;
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 8px;
+.add-book,
+.books-list {
+  background:var(--card);
+  padding:20px;
+  border-radius:12px;
+  border-left:5px solid var(--accent);
+  box-shadow:0 6px 18px rgba(0,0,0,0.08);
 }
 
-input, textarea, button {
-  width: 100%;
-  padding: 8px;
-  margin-top: 8px;
+.add-book { flex:0 0 320px; }
+.books-list { flex:1; }
+
+.add-book input,
+.add-book textarea,
+.books-list input,
+button {
+  width:100%;
+  margin-top:8px;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  font-size:14px;
+  box-sizing:border-box;
 }
 
 button {
-  background: #6e1e7c;
-  color: white;
-  border: none;
-  cursor: pointer;
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  padding:10px;
+  font-weight:600;
+  cursor:pointer;
+  transition: background 0.3s;
 }
+
+button:hover { background: var(--accent-hover); }
+
+
+.books-list input {
+  margin-bottom:16px;
+  border:1px solid var(--accent);
+  font-size:15px;
+}
+
 
 .book-card {
-  background: #f2e6f5;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 6px;
+  border-bottom:1px solid #eee;
+  padding:12px 8px;
+  transition: background 0.2s;
+  border-radius:8px;
+  margin-bottom:8px;
+  background:#f7eef8;
+  border-left:4px solid var(--accent);
 }
 
-.profile {
-  max-width: 700px;
-  margin: auto;
+.book-card:hover {
+  background:#f3e2f7;
 }
 
-.ranking li {
-  background: white;
-  padding: 10px;
-  margin-bottom: 6px;
-  border-radius: 6px;
+.book-card h3 { margin:0 0 4px; font-size:18px; }
+.book-card p { margin:4px 0; font-size:14px; }
+.book-card small { display:block; color:#555; margin-top:4px; font-size:12px; }
+
+.book-actions {
+  margin-top:8px;
 }
 
-.chat {
-  max-width: 600px;
-  margin: auto;
-}
-
-.messages {
-  height: 300px;
-  overflow-y: auto;
-  background: #eee;
-  padding: 10px;
-  margin-bottom: 10px;
+.book-actions button {
+  margin-right:8px;
+  font-size:13px;
+  padding:6px 10px;
 }
