@@ -13,175 +13,237 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ================= ELEMENTOS =================
-const bookForm = document.getElementById("book-form");
-const booksDiv = document.getElementById("books");
-const buscaInput = document.getElementById("buscaLivro");
+// ================= PÁGINA ATUAL =================
+const page = document.body.getAttribute("data-page");
 
 // ================= LOGIN =================
-const loginBtn = document.createElement("button");
-loginBtn.textContent = "Entrar com email UNIOESTE";
-
-const logoutBtn = document.createElement("button");
-logoutBtn.textContent = "Sair";
-logoutBtn.style.display = "none";
-
-bookForm.parentNode.insertBefore(loginBtn, bookForm);
-bookForm.parentNode.insertBefore(logoutBtn, bookForm);
-
 const provider = new firebase.auth.GoogleAuthProvider();
 let currentUser = null;
-
-// ---------- LOGIN RESTRITO ----------
-loginBtn.onclick = async () => {
-  const result = await auth.signInWithPopup(provider);
-  if (!result.user.email.endsWith("@unioeste.br")) {
-    alert("Apenas email institucional UNIOESTE");
-    await auth.signOut();
-  }
-};
-
-logoutBtn.onclick = () => auth.signOut();
 
 // ================= AUTH STATE =================
 auth.onAuthStateChanged(async user => {
   currentUser = user;
 
-  if (user) {
-    loginBtn.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-    bookForm.style.display = "block";
+  if (!user) {
+    if (page !== "home") {
+      window.location.href = "index.html";
+    }
+    return;
+  }
 
-    const ref = db.collection("users").doc(user.uid);
-    if (!(await ref.get()).exists) {
-      await ref.set({
-        name: user.displayName,
-        email: user.email,
-        points: 0,
-        rating: 0,
-        reviews: 0,
+  // Verifica email UNIOESTE
+  if (!user.email.endsWith("@unioeste.br")) {
+    alert("Use apenas email institucional da UNIOESTE");
+    await auth.signOut();
+    return;
+  }
+
+  // Cria perfil se não existir
+  const ref = db.collection("users").doc(user.uid);
+  const snap = await ref.get();
+
+  if (!snap.exists) {
+    await ref.set({
+      name: user.displayName,
+      email: user.email,
+      points: 0,
+      ratingSum: 0,
+      ratingCount: 0,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  // Carrega conteúdo conforme página
+  if (page === "home") carregarHome();
+  if (page === "profile") carregarPerfil();
+  if (page === "ranking") carregarRanking();
+  if (page === "wishlist") carregarWishlist();
+});
+
+// ================= LOGIN BUTTON (HOME) =================
+if (page === "home") {
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (loginBtn) {
+    loginBtn.onclick = async () => {
+      await auth.signInWithPopup(provider);
+    };
+  }
+
+  if (logoutBtn) {
+    logoutBtn.onclick = async () => {
+      await auth.signOut();
+    };
+  }
+}
+
+// ================= HOME =================
+function carregarHome() {
+  const bookForm = document.getElementById("book-form");
+  const booksDiv = document.getElementById("books");
+  const buscaInput = document.getElementById("buscaLivro");
+
+  // Adicionar livro
+  if (bookForm) {
+    bookForm.addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const title = document.getElementById("title").value.trim();
+      const author = document.getElementById("author").value.trim();
+      const category = document.getElementById("category").value.trim();
+      const description = document.getElementById("description").value.trim();
+
+      await db.collection("books").add({
+        title,
+        author,
+        category,
+        description,
+        status: "available",
+        ownerId: currentUser.uid,
+        ownerName: currentUser.displayName,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-    }
-  } else {
-    loginBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
-    bookForm.style.display = "none";
+
+      bookForm.reset();
+    });
   }
-});
 
-// ================= ADICIONAR LIVRO =================
-bookForm.addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!currentUser) return;
+  // Listar livros
+  db.collection("books")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(snapshot => {
+      booksDiv.innerHTML = "";
 
-  await db.collection("books").add({
-    title: title.value,
-    author: author.value,
-    category: category.value,
-    description: description.value,
-    status: "available",
-    ownerId: currentUser.uid,
-    ownerName: currentUser.displayName,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+      snapshot.forEach(doc => {
+        const b = doc.data();
+        const div = document.createElement("div");
+        div.className = "book-card";
 
-  bookForm.reset();
-});
+        div.innerHTML = `
+          <h3>${escapeHtml(b.title)}</h3>
+          <strong>${escapeHtml(b.author)}</strong>
+          <p>${escapeHtml(b.category || "")}</p>
+          <p>Status: ${b.status}</p>
+          <small>Dono: ${escapeHtml(b.ownerName)}</small>
+        `;
 
-// ================= LISTAGEM + EMPRÉSTIMO =================
-db.collection("books").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-  booksDiv.innerHTML = "";
+        if (currentUser.uid === b.ownerId) {
+          const btn = document.createElement("button");
+          btn.textContent =
+            b.status === "available" ? "Marcar emprestado" : "Marcar disponível";
 
-  snapshot.forEach(doc => {
-    const b = doc.data();
-    const div = document.createElement("div");
-    div.className = "book-card";
+          btn.onclick = async () => {
+            const novo = b.status === "available" ? "borrowed" : "available";
+            await doc.ref.update({ status: novo });
 
-    div.innerHTML = `
-      <h3>${b.title}</h3>
-      <strong>${b.author}</strong>
-      <p>${b.category || ""}</p>
-      <p>Status: ${b.status}</p>
-      <small>Dono: ${b.ownerName}</small>
-    `;
+            if (novo === "borrowed") {
+              await db.collection("users").doc(currentUser.uid).update({
+                points: firebase.firestore.FieldValue.increment(10)
+              });
+            }
+          };
 
-    if (currentUser && currentUser.uid === b.ownerId) {
-      const btn = document.createElement("button");
-      btn.textContent = b.status === "available" ? "Emprestar" : "Devolver";
-
-      btn.onclick = async () => {
-        const novo = b.status === "available" ? "borrowed" : "available";
-        await doc.ref.update({ status: novo });
-
-        if (novo === "borrowed") {
-          await db.collection("loans").add({
-            bookId: doc.id,
-            ownerId: b.ownerId,
-            status: "active",
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-
-          await db.collection("users").doc(b.ownerId).update({
-            points: firebase.firestore.FieldValue.increment(10)
-          });
+          div.appendChild(btn);
         }
-      };
 
-      div.appendChild(btn);
-    }
+        booksDiv.appendChild(div);
+      });
+    });
 
-    booksDiv.appendChild(div);
-  });
-});
-
-// ================= AVALIAÇÃO =================
-async function avaliar(ownerId, stars, comment) {
-  await db.collection("reviews").add({
-    ownerId,
-    reviewerId: currentUser.uid,
-    stars,
-    comment,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  await db.collection("users").doc(ownerId).update({
-    rating: firebase.firestore.FieldValue.increment(stars),
-    reviews: firebase.firestore.FieldValue.increment(1)
-  });
+  // Busca
+  if (buscaInput) {
+    buscaInput.addEventListener("keyup", () => {
+      const f = buscaInput.value.toLowerCase();
+      document.querySelectorAll(".book-card").forEach(c => {
+        c.style.display = c.textContent.toLowerCase().includes(f)
+          ? "block"
+          : "none";
+      });
+    });
+  }
 }
 
-// ================= WISHLIST =================
-async function addWishlist(title) {
-  await db.collection("wishlists").add({
-    userId: currentUser.uid,
-    title
-  });
-}
+// ================= PERFIL =================
+async function carregarPerfil() {
+  const userSnap = await db.collection("users").doc(currentUser.uid).get();
+  const u = userSnap.data();
 
-// ================= DENÚNCIA =================
-async function denunciar(userId, motivo) {
-  await db.collection("reports").add({
-    userId,
-    motivo,
-    reporter: currentUser.uid,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  document.getElementById("userName").textContent = u.name;
+  document.getElementById("userEmail").textContent = u.email;
+  document.getElementById("userPoints").textContent = u.points;
+
+  const rating =
+    u.ratingCount > 0 ? (u.ratingSum / u.ratingCount).toFixed(1) : "0";
+  document.getElementById("userRating").textContent = rating;
+
+  // Meus livros
+  const myBooksDiv = document.getElementById("myBooks");
+  db.collection("books")
+    .where("ownerId", "==", currentUser.uid)
+    .onSnapshot(snap => {
+      myBooksDiv.innerHTML = "";
+      snap.forEach(doc => {
+        const b = doc.data();
+        myBooksDiv.innerHTML += `<p>📘 ${b.title} (${b.status})</p>`;
+      });
+    });
 }
 
 // ================= RANKING =================
-db.collection("users")
-  .orderBy("points", "desc")
-  .limit(10)
-  .onSnapshot(snap => {
-    console.log("Ranking atualizado");
+function carregarRanking() {
+  const list = document.getElementById("rankingList");
+
+  db.collection("users")
+    .orderBy("points", "desc")
+    .limit(10)
+    .onSnapshot(snapshot => {
+      list.innerHTML = "";
+      let pos = 1;
+
+      snapshot.forEach(doc => {
+        const u = doc.data();
+        const li = document.createElement("li");
+        li.textContent = `${pos++}º ${u.name} — ${u.points} pts`;
+        list.appendChild(li);
+      });
+    });
+}
+
+// ================= WISHLIST =================
+function carregarWishlist() {
+  const form = document.getElementById("wishlistForm");
+  const list = document.getElementById("wishlistItems");
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const title = document.getElementById("wishTitle").value.trim();
+
+    await db.collection("wishlists").add({
+      userId: currentUser.uid,
+      title
+    });
+
+    form.reset();
   });
 
-// ================= BUSCA =================
-buscaInput.addEventListener("keyup", () => {
-  const f = buscaInput.value.toLowerCase();
-  document.querySelectorAll(".book-card").forEach(c => {
-    c.style.display = c.textContent.toLowerCase().includes(f) ? "block" : "none";
-  });
-});
+  db.collection("wishlists")
+    .where("userId", "==", currentUser.uid)
+    .onSnapshot(snapshot => {
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        list.innerHTML += `<p>❤️ ${doc.data().title}</p>`;
+      });
+    });
+}
 
+// ================= UTIL =================
+function escapeHtml(str) {
+  return str
+    ? str.replace(/[&<>"']/g, s =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
+          s
+        ])
+      )
+    : "";
+}
