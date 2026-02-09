@@ -30,7 +30,7 @@ header {
 header img {
   position:absolute;
   left:20px;
-  width:140px;   
+  width:180px;   
   height:auto;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
@@ -215,5 +215,6 @@ button:hover { background: var(--accent-hover); }
   margin-top: 4px;
   color: #444;
 }
+
 
 
