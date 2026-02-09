@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Meu Perfil</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>👤 Meu Perfil</h1>
+  <nav>
+    <a href="index.html">← Voltar</a>
+  </nav>
+</header>
+
+<main class="profile">
+
+  <div class="profile-card">
+    <h2 id="userName">Nome do usuário</h2>
+    <p id="userEmail">email@unioeste.br</p>
+    <p>⭐ Avaliação: <span id="userRating">0</span></p>
+    <p>🎯 Pontos: <span id="userPoints">0</span></p>
+  </div>
+
+  <section>
+    <h3>📚 Meus livros</h3>
+    <div id="myBooks"></div>
+  </section>
+
+  <section>
+    <h3>📜 Histórico de empréstimos</h3>
+    <div id="myLoans"></div>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
