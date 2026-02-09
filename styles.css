@@ -24,13 +24,13 @@ header {
   align-items:center;
   justify-content:center;
   position:relative;
-  height:90px;
+  height:130px;
 }
 
 header img {
   position:absolute;
   left:20px;
-  width:90px;   
+  width:140px;   
   height:auto;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
@@ -215,4 +215,5 @@ button:hover { background: var(--accent-hover); }
   margin-top: 4px;
   color: #444;
 }
+
 
