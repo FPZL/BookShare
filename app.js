@@ -1,97 +1,94 @@
-// Firebase config
-}
+/********************
+* LOAN SYSTEM *
+********************/
+async function solicitarEmprestimo(bookId, ownerId) {
+const userRef = db.collection('usuarios').doc(currentUser.uid);
+const snap = await userRef.get();
 
 
-currentUser = user;
-loginBtn.style.display = 'none';
+if (snap.data().pontos < 5)
+return alert('Pontos insuficientes');
 
 
-const ref = db.collection('usuarios').doc(user.uid);
-const snap = await ref.get();
-
-
-if (!snap.exists) {
-await ref.set({
-nome: user.displayName,
-email: user.email,
-pontos: 10,
-createdAt: firebase.firestore.FieldValue.serverTimestamp()
-});
-}
-});
-
-
-// ---------- ADICIONAR LIVRO ----------
-const form = document.getElementById('book-form');
-form.addEventListener('submit', async e => {
-e.preventDefault();
-
-
-await db.collection('books').add({
-title: title.value,
-author: author.value,
-category: category.value,
-description: description.value,
-status: 'available',
-uid: currentUser.uid,
-owner: currentUser.displayName,
-createdAt: firebase.firestore.FieldValue.serverTimestamp()
-});
-
-
-await db.collection('usuarios').doc(currentUser.uid)
-.update({ pontos: firebase.firestore.FieldValue.increment(5) });
-
-
-form.reset();
-});
-
-
-// ---------- LISTAGEM ----------
-db.collection('books').orderBy('createdAt','desc')
-.onSnapshot(snapshot => {
-books.innerHTML = '';
-snapshot.forEach(doc => {
-const b = doc.data();
-const div = document.createElement('div');
-div.className = 'book-card';
-
-
-div.innerHTML = `
-<h3>${b.title}</h3>
-<strong>${b.author}</strong>
-<p>${b.description || ''}</p>
-<small>${b.owner}</small>
-<button onclick="reservar('${doc.id}')">Reservar</button>
-`;
-
-
-books.appendChild(div);
-});
-});
-
-
-// ---------- RESERVA + HISTÓRICO ----------
-async function reservar(bookId) {
 await db.collection('emprestimos').add({
 bookId,
-userId: currentUser.uid,
-data: firebase.firestore.FieldValue.serverTimestamp()
+ownerId,
+borrowerId: currentUser.uid,
+status: 'ativo',
+createdAt: firebase.firestore.FieldValue.serverTimestamp()
+});
+
+
+await userRef.update({ pontos: firebase.firestore.FieldValue.increment(-5) });
+
+
+alert('Empréstimo solicitado');
+}
+
+
+/********************
+* RATING SYSTEM *
+********************/
+async function avaliar(userId, estrelas, comentario) {
+await db.collection('avaliacoes').add({
+avaliador: currentUser.uid,
+avaliado: userId,
+estrelas,
+comentario,
+createdAt: firebase.firestore.FieldValue.serverTimestamp()
 });
 
 
 await db.collection('usuarios').doc(currentUser.uid)
-.update({ pontos: firebase.firestore.FieldValue.increment(-3) });
-
-
-alert('Livro reservado!');
+.update({ pontos: firebase.firestore.FieldValue.increment(2) });
 }
 
 
-// ---------- BUSCA ----------
+/********************
+* WISHLIST *
+********************/
+async function addWishlist(title) {
+await db.collection('wishlists').doc(currentUser.uid)
+.set({ livros: firebase.firestore.FieldValue.arrayUnion(title) }, { merge: true });
+}
+
+
+/********************
+* REPORT SYSTEM *
+********************/
+async function denunciar(denunciado, motivo) {
+await db.collection('denuncias').add({
+denunciante: currentUser.uid,
+denunciado,
+motivo,
+createdAt: firebase.firestore.FieldValue.serverTimestamp()
+});
+}
+
+
+/********************
+* SEARCH *
+********************/
 buscaLivro.onkeyup = () => {
 const f = buscaLivro.value.toLowerCase();
 document.querySelectorAll('.book-card').forEach(c => {
 c.style.display = c.innerText.toLowerCase().includes(f) ? 'block' : 'none';
 });
 };
+
+
+/********************
+* RANKING *
+********************/
+db.collection('usuarios').orderBy('pontos','desc').limit(10)
+.onSnapshot(snap => {
+console.log('Ranking atualizado');
+});
+
+
+/********************
+* CHAT STRUCTURE *
+********************/
+// chats/{chatId}/mensagens/{msgId}
+// estrutura pronta para realtime
+
