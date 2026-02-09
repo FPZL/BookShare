@@ -270,6 +270,36 @@ function calcularMedia(ratings){
   const soma = valores.reduce((a,b) => a + b, 0);
   return { media: (soma / total).toFixed(1), total };
 }
+// ===== DENÚNCIA =====
+const reportBtn = document.createElement('button');
+reportBtn.className = 'report-btn';
+reportBtn.textContent = 'Denunciar 🚩';
+
+reportBtn.onclick = () => {
+  const assunto = encodeURIComponent('Denúncia de livro no BookShare');
+  const corpo = encodeURIComponent(
+    `Olá,
+
+Gostaria de denunciar o seguinte livro:
+
+Título: ${data.title}
+Autor do livro: ${data.author}
+Publicado por: ${data.userName}
+UID do usuário: ${data.uid}
+ID do livro: ${id}
+
+Motivo da denúncia:
+(descreva aqui)
+
+Enviado automaticamente pelo sistema BookShare.`
+  );
+
+  window.location.href =
+    `mailto:felipe.lemos@unioeste.br?subject=${assunto}&body=${corpo}`;
+};
+
+div.appendChild(reportBtn);
+
 
 // ================= ESCAPE HTML =================
 function escapeHtml(str){
