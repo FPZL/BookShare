@@ -1,11 +1,11 @@
 // ================= FIREBASE =================
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_DOMINIO",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_BUCKET",
-  messagingSenderId: "SEU_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyCRakMbIAtwkg7xlaxuyNfdVUADwx5S-0s",
+  authDomain: "test-194d9.firebaseapp.com",
+  projectId: "test-194d9",
+  storageBucket: "test-194d9.firebasestorage.app",
+  messagingSenderId: "709373549581",
+  appId: "1:709373549581:web:069f53bd9d09a21fbc8944"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -184,3 +184,4 @@ buscaInput.addEventListener("keyup", () => {
     c.style.display = c.textContent.toLowerCase().includes(f) ? "block" : "none";
   });
 });
+
