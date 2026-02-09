@@ -1,6 +1,4 @@
-/*********************************
- * FIREBASE CONFIG
- *********************************/
+// --- Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyCRakMbIAtwkg7xlaxuyNfdVUADwx5S-0s",
   authDomain: "test-194d9.firebaseapp.com",
@@ -9,26 +7,19 @@ const firebaseConfig = {
   messagingSenderId: "709373549581",
   appId: "1:709373549581:web:069f53bd9d09a21fbc8944"
 };
-
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
-const db   = firebase.firestore();
-const provider = new firebase.auth.GoogleAuthProvider();
+const db = firebase.firestore();
 
-/*********************************
- * ELEMENTOS
- *********************************/
-const bookForm   = document.getElementById('book-form');
-const booksDiv   = document.getElementById('books');
-const buscaInput = document.getElementById('buscaLivro');
+// --- Elementos ---
+const bookForm = document.getElementById('book-form');
+const booksDiv = document.getElementById('books');
+const buscaInput = document.getElementById('buscaLivro'); // agora dentro da seção de livros
 
-/*********************************
- * LOGIN / LOGOUT (UNIOESTE)
- *********************************/
+// --- Login/Logout ---
 const loginBtn = document.createElement('button');
 loginBtn.textContent = 'Entrar com Google';
-
 const logoutBtn = document.createElement('button');
 logoutBtn.textContent = 'Sair';
 logoutBtn.style.display = 'none';
@@ -36,213 +27,113 @@ logoutBtn.style.display = 'none';
 bookForm.parentNode.insertBefore(loginBtn, bookForm);
 bookForm.parentNode.insertBefore(logoutBtn, bookForm);
 
-let currentUser = null;
+const provider = new firebase.auth.GoogleAuthProvider();
 
-loginBtn.onclick  = () => auth.signInWithPopup(provider);
+loginBtn.onclick = () => auth.signInWithPopup(provider);
 logoutBtn.onclick = () => auth.signOut();
 
-auth.onAuthStateChanged(async user => {
+let currentUser = null;
+
+auth.onAuthStateChanged(user => {
   currentUser = user;
-
-  if (user) {
-    if (!user.email.endsWith('@unioeste.br')) {
-      alert('Use email institucional da UNIOESTE');
-      await auth.signOut();
-      return;
-    }
-
-    loginBtn.style.display  = 'none';
+  if(user){
+    loginBtn.style.display = 'none';
     logoutBtn.style.display = 'inline-block';
-    bookForm.style.display  = 'block';
-
-    const userRef = db.collection('usuarios').doc(user.uid);
-    const snap = await userRef.get();
-
-    if (!snap.exists) {
-      await userRef.set({
-        nome: user.displayName,
-        email: user.email,
-        pontos: 20,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
+    bookForm.style.display = 'block';
   } else {
-    loginBtn.style.display  = 'inline-block';
+    loginBtn.style.display = 'inline-block';
     logoutBtn.style.display = 'none';
-    bookForm.style.display  = 'none';
+    bookForm.style.display = 'none';
   }
 });
 
-/*********************************
- * ADICIONAR LIVRO (+ pontos)
- *********************************/
-bookForm.addEventListener('submit', async e => {
+// --- Adicionar livro ---
+bookForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!currentUser) return alert('Faça login');
+  if(!currentUser) return alert('Faça login para adicionar livros');
+
+  const title = document.getElementById('title').value.trim();
+  const author = document.getElementById('author').value.trim();
+  const category = document.getElementById('category').value.trim();
+  const contact = document.getElementById('contact').value.trim();
+  const description = document.getElementById('description').value.trim();
 
   await db.collection('books').add({
-    title: title.value.trim(),
-    author: author.value.trim(),
-    category: category.value.trim(),
-    description: description.value.trim(),
+    title,
+    author,
+    category,
+    contact,
+    description,
     status: 'available',
     uid: currentUser.uid,
     userName: currentUser.displayName,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  await db.collection('usuarios')
-    .doc(currentUser.uid)
-    .update({ pontos: firebase.firestore.FieldValue.increment(5) });
-
   bookForm.reset();
 });
 
-/*********************************
- * LISTAR LIVROS + EMPRÉSTIMO
- *********************************/
-db.collection('books')
-  .orderBy('createdAt', 'desc')
-  .onSnapshot(snapshot => {
-    booksDiv.innerHTML = '';
+// --- Listar livros ---
+db.collection('books').orderBy('createdAt','desc').onSnapshot(snapshot => {
+  booksDiv.innerHTML = '';
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const id = doc.id;
+    const div = document.createElement('div');
+    div.className = 'book-card';
 
-    snapshot.forEach(doc => {
-      const b = doc.data();
-      const id = doc.id;
+    div.innerHTML = `
+      <h3>${escapeHtml(data.title)}</h3>
+      <div><strong>${escapeHtml(data.author)}</strong></div>
+      ${data.category ? `<p>Categoria: ${escapeHtml(data.category)}</p>` : ''}
+      ${data.contact ? `<p>Contato: ${escapeHtml(data.contact)}</p>` : ''}
+      <p>${escapeHtml(data.description||'')}</p>
+      <p>Status: ${data.status}</p>
+      <small>Adicionado por: ${escapeHtml(data.userName||'Usuário')}</small>
+    `;
 
-      const div = document.createElement('div');
-      div.className = 'book-card';
+    // Só o dono pode editar/remover
+    if(currentUser && currentUser.uid === data.uid){
+      const actions = document.createElement('div');
+      actions.className = 'book-actions';
 
-      div.innerHTML = `
-        <h3>${escapeHtml(b.title)}</h3>
-        <strong>${escapeHtml(b.author)}</strong>
-        <p>${escapeHtml(b.description || '')}</p>
-        <p>Status: ${b.status}</p>
-        <small>${escapeHtml(b.userName)}</small>
-      `;
+      const toggleBtn = document.createElement('button');
+      toggleBtn.textContent = data.status === 'available' ? 'Marcar como emprestado' : 'Marcar como devolvido';
+      toggleBtn.onclick = async () => {
+        const newStatus = data.status === 'available' ? 'borrowed' : 'available';
+        await db.collection('books').doc(id).update({ status: newStatus });
+      };
 
-      // Solicitar empréstimo
-      if (currentUser && currentUser.uid !== b.uid && b.status === 'available') {
-        const btn = document.createElement('button');
-        btn.textContent = 'Solicitar empréstimo';
-        btn.onclick = () => solicitarEmprestimo(id, b.uid);
-        div.appendChild(btn);
-      }
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Remover';
+      delBtn.onclick = async () => {
+        if(confirm('Remover este livro?')) await db.collection('books').doc(id).delete();
+      };
 
-      // Dono do livro
-      if (currentUser && currentUser.uid === b.uid) {
-        const btn = document.createElement('button');
-        btn.textContent = 'Marcar devolvido';
-        btn.onclick = () =>
-          db.collection('books').doc(id).update({ status: 'available' });
-        div.appendChild(btn);
-      }
+      actions.appendChild(toggleBtn);
+      actions.appendChild(delBtn);
+      div.appendChild(actions);
+    }
 
-      booksDiv.appendChild(div);
-    });
-  });
-
-/*********************************
- * EMPRÉSTIMO / HISTÓRICO
- *********************************/
-async function solicitarEmprestimo(bookId, ownerId) {
-  const userRef = db.collection('usuarios').doc(currentUser.uid);
-  const snap = await userRef.get();
-
-  if (snap.data().pontos < 5)
-    return alert('Pontos insuficientes');
-
-  await db.collection('emprestimos').add({
-    bookId,
-    ownerId,
-    borrowerId: currentUser.uid,
-    status: 'ativo',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  await userRef.update({
-    pontos: firebase.firestore.FieldValue.increment(-5)
-  });
-
-  await db.collection('books')
-    .doc(bookId)
-    .update({ status: 'borrowed' });
-
-  alert('Empréstimo realizado');
-}
-
-/*********************************
- * AVALIAÇÃO (estrelas + comentário)
- *********************************/
-async function avaliar(avaliadoId, estrelas, comentario) {
-  await db.collection('avaliacoes').add({
-    avaliador: currentUser.uid,
-    avaliado: avaliadoId,
-    estrelas,
-    comentario,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  await db.collection('usuarios')
-    .doc(currentUser.uid)
-    .update({ pontos: firebase.firestore.FieldValue.increment(2) });
-}
-
-/*********************************
- * WISHLIST
- *********************************/
-async function addWishlist(titulo) {
-  await db.collection('wishlists')
-    .doc(currentUser.uid)
-    .set({
-      livros: firebase.firestore.FieldValue.arrayUnion(titulo)
-    }, { merge: true });
-}
-
-/*********************************
- * DENÚNCIA
- *********************************/
-async function denunciar(denunciadoId, motivo) {
-  await db.collection('denuncias').add({
-    denunciante: currentUser.uid,
-    denunciado: denunciadoId,
-    motivo,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-
-/*********************************
- * RANKING (top usuários)
- *********************************/
-db.collection('usuarios')
-  .orderBy('pontos', 'desc')
-  .limit(10)
-  .onSnapshot(() => {
-    // ranking disponível no Firestore
-  });
-
-/*********************************
- * BUSCA
- *********************************/
-buscaInput.addEventListener('keyup', () => {
-  const f = buscaInput.value.toLowerCase();
-  document.querySelectorAll('.book-card').forEach(card => {
-    card.style.display =
-      card.innerText.toLowerCase().includes(f) ? 'block' : 'none';
+    booksDiv.appendChild(div);
   });
 });
 
-/*********************************
- * CHAT (estrutura pronta)
- *********************************/
-// chats/{chatId}/mensagens/{msgId}
+// --- Busca de livros ---
+buscaInput.addEventListener('keyup', () => {
+  const filtro = buscaInput.value.toLowerCase();
+  const livros = document.querySelectorAll('.book-card');
 
-/*********************************
- * ESCAPE HTML
- *********************************/
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>"']/g, s =>
-    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[s]
-  );
+  livros.forEach(livro => {
+    const title = livro.querySelector('h3')?.textContent.toLowerCase() || '';
+    const author = livro.querySelector('strong')?.textContent.toLowerCase() || '';
+    const category = livro.querySelector('p')?.textContent.toLowerCase() || '';
+    livro.style.display = (title.includes(filtro) || author.includes(filtro) || category.includes(filtro)) ? 'block' : 'none';
+  });
+});
+
+// --- Escape HTML ---
+function escapeHtml(str){
+  if(!str) return '';
+  return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
