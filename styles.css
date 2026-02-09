@@ -196,3 +196,23 @@ button:hover { background: var(--accent-hover); }
   border-radius:8px;
   margin-bottom:6px;
 }
+.stars {
+  margin-top: 8px;
+}
+
+.star {
+  font-size: 20px;
+  cursor: pointer;
+  color: #ccc;
+}
+
+.star.active {
+  color: gold;
+}
+
+.rating-info {
+  font-size: 13px;
+  margin-top: 4px;
+  color: #444;
+}
+
