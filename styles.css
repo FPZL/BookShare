@@ -220,10 +220,24 @@ button:hover { background: var(--accent-hover); }
   cursor: pointer;
   font-weight: 600;
 }
-
 .user-link:hover {
   text-decoration: underline;
 }
+.report-btn {
+  background:#c62828;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:13px;
+  cursor:pointer;
+  margin-top:8px;
+}
+
+.report-btn:hover {
+  background:#a81f1f;
+}
+
 
 
 
