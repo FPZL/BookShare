@@ -145,10 +145,11 @@ button:hover { background: var(--accent-hover); }
 }
 /* ===== ABAS ===== */
 .tabs {
+  max-width:1100px;
+  margin:20px auto;
   display:flex;
   justify-content:center;
   gap:12px;
-  margin:20px;
 }
 
 .tab {
@@ -165,14 +166,13 @@ button:hover { background: var(--accent-hover); }
   color:#fff;
 }
 
+/* ===== CONTEÚDO DAS ABAS ===== */
 .tab-content {
   display:none;
 }
 
 .tab-content.active {
-  display:flex;
-  flex-wrap:wrap;
-  gap:20px;
+  display:block; /* ⚠️ MUITO IMPORTANTE */
 }
 
 /* ===== PERFIL ===== */
@@ -181,12 +181,8 @@ button:hover { background: var(--accent-hover); }
   padding:24px;
   border-radius:14px;
   max-width:600px;
-  margin:auto;
+  margin:20px auto;
   box-shadow:0 6px 18px rgba(0,0,0,0.1);
-}
-
-.profile-card h3 {
-  margin-top:20px;
 }
 
 .profile-card ul {
@@ -199,6 +195,4 @@ button:hover { background: var(--accent-hover); }
   padding:8px 12px;
   border-radius:8px;
   margin-bottom:6px;
-  font-size:14px;
 }
-
