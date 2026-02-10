@@ -216,7 +216,56 @@ function listarLivros(){
           document.querySelector('[data-tab="perfil"]').click();
         };
 
-        // Denúncia
+        // Botões de ação
+        if(currentUser){
+          // Dono do livro -> remover ou devolver
+          if(data.uid === currentUser.uid){
+            if(data.status === 'borrowed'){
+              const returnBtn = document.createElement('button');
+              returnBtn.textContent = 'Devolver 📖';
+              returnBtn.style.marginRight = '6px';
+              returnBtn.onclick = async () => {
+                if(confirm(`Deseja marcar o livro "${data.title}" como disponível?`)){
+                  await db.collection('books').doc(id).update({
+                    status:'available',
+                    borrowedBy: firebase.firestore.FieldValue.delete(),
+                    borrowedAt: firebase.firestore.FieldValue.delete()
+                  });
+                }
+              };
+              div.appendChild(returnBtn);
+            } else {
+              const removeBtn = document.createElement('button');
+              removeBtn.textContent = 'Remover ❌';
+              removeBtn.style.marginRight = '6px';
+              removeBtn.onclick = async () => {
+                if(confirm('Deseja realmente remover este livro?')){
+                  await db.collection('books').doc(id).delete();
+                }
+              };
+              div.appendChild(removeBtn);
+            }
+          } else {
+            // Outro usuário -> emprestar se disponível
+            if(data.status === 'available'){
+              const borrowBtn = document.createElement('button');
+              borrowBtn.textContent = 'Emprestar 📚';
+              borrowBtn.style.marginRight = '6px';
+              borrowBtn.onclick = async () => {
+                if(confirm(`Deseja pegar emprestado o livro "${data.title}"?`)){
+                  await db.collection('books').doc(id).update({
+                    status:'borrowed',
+                    borrowedBy: currentUser.uid,
+                    borrowedAt: firebase.firestore.FieldValue.serverTimestamp()
+                  });
+                }
+              };
+              div.appendChild(borrowBtn);
+            }
+          }
+        }
+
+        // Botão de denúncia
         const reportBtn = document.createElement('button');
         reportBtn.className = 'report-btn';
         reportBtn.textContent = 'Denunciar 🚩';
