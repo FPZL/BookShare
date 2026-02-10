@@ -28,42 +28,7 @@ const meusLivrosUl = document.getElementById('meus-livros');
 const historicoUl = document.getElementById('historico-emprestimos');
 
 // ================= MODAL DENÚNCIA =================
-const modal = document.createElement('div');
-modal.id = 'report-modal';
-modal.style.cssText = `
-  position:fixed;
-  top:0;left:0;width:100%;height:100%;
-  background:rgba(0,0,0,.6);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-`;
-
-modal.innerHTML = `
-  <div style="
-    background:#fff;
-    padding:20px;
-    border-radius:12px;
-    max-width:420px;
-    width:90%;
-  ">
-    <h3>🚩 Denunciar livro</h3>
-    <p id="report-info"></p>
-    <textarea id="report-text" rows="4"
-      placeholder="Descreva o motivo da denúncia"
-      style="width:100%;padding:8px;border-radius:8px"></textarea>
-    <div style="margin-top:12px;text-align:right">
-      <button id="cancel-report">Cancelar</button>
-      <button id="send-report" style="background:#c62828;color:#fff">
-        Enviar denúncia
-      </button>
-    </div>
-  </div>
-`;
-
-document.body.appendChild(modal);
-
+const modal = document.getElementById('report-modal');
 let reportData = null;
 
 document.getElementById('cancel-report').onclick = () => {
@@ -147,11 +112,11 @@ bookForm.addEventListener('submit', async e => {
   if(!currentUser) return alert('Faça login');
 
   await db.collection('books').add({
-    title: title.value.trim(),
-    author: author.value.trim(),
-    category: category.value.trim(),
-    contact: contact.value.trim(),
-    description: description.value.trim(),
+    title: document.getElementById('title').value.trim(),
+    author: document.getElementById('author').value.trim(),
+    category: document.getElementById('category').value.trim(),
+    contact: document.getElementById('contact').value.trim(),
+    description: document.getElementById('description').value.trim(),
     status:'available',
     uid: currentUser.uid,
     userName: currentUser.displayName,
@@ -180,6 +145,8 @@ function listarLivros(){
           <h3>${escapeHtml(data.title)}</h3>
           <strong>${escapeHtml(data.author)}</strong>
           <p>${escapeHtml(data.description||'')}</p>
+          <p><strong>Categoria:</strong> ${escapeHtml(data.category||'')}</p>
+          <p><strong>Contato:</strong> ${escapeHtml(data.contact||'')}</p>
           <p>Status: ${data.status}</p>
 
           <div class="stars">
@@ -218,50 +185,51 @@ function listarLivros(){
 
         // Botões de ação
         if(currentUser){
-          // Dono do livro -> remover ou devolver
-          if(data.uid === currentUser.uid){
-            if(data.status === 'borrowed'){
-              const returnBtn = document.createElement('button');
-              returnBtn.textContent = 'Devolver 📖';
-              returnBtn.style.marginRight = '6px';
-              returnBtn.onclick = async () => {
-                if(confirm(`Deseja marcar o livro "${data.title}" como disponível?`)){
-                  await db.collection('books').doc(id).update({
-                    status:'available',
-                    borrowedBy: firebase.firestore.FieldValue.delete(),
-                    borrowedAt: firebase.firestore.FieldValue.delete()
-                  });
-                }
-              };
-              div.appendChild(returnBtn);
-            } else {
-              const removeBtn = document.createElement('button');
-              removeBtn.textContent = 'Remover ❌';
-              removeBtn.style.marginRight = '6px';
-              removeBtn.onclick = async () => {
-                if(confirm('Deseja realmente remover este livro?')){
-                  await db.collection('books').doc(id).delete();
-                }
-              };
-              div.appendChild(removeBtn);
-            }
-          } else {
-            // Outro usuário -> emprestar se disponível
-            if(data.status === 'available'){
-              const borrowBtn = document.createElement('button');
-              borrowBtn.textContent = 'Emprestar 📚';
-              borrowBtn.style.marginRight = '6px';
-              borrowBtn.onclick = async () => {
-                if(confirm(`Deseja pegar emprestado o livro "${data.title}"?`)){
-                  await db.collection('books').doc(id).update({
-                    status:'borrowed',
-                    borrowedBy: currentUser.uid,
-                    borrowedAt: firebase.firestore.FieldValue.serverTimestamp()
-                  });
-                }
-              };
-              div.appendChild(borrowBtn);
-            }
+          // Devolver se emprestado por você
+          if(data.status === 'borrowed' && data.borrowedBy === currentUser.uid){
+            const returnBtn = document.createElement('button');
+            returnBtn.textContent = 'Devolver 📖';
+            returnBtn.style.marginRight = '6px';
+            returnBtn.onclick = async () => {
+              if(confirm(`Deseja marcar o livro "${data.title}" como disponível?`)){
+                await db.collection('books').doc(id).update({
+                  status:'available',
+                  borrowedBy: firebase.firestore.FieldValue.delete(),
+                  borrowedAt: firebase.firestore.FieldValue.delete()
+                });
+              }
+            };
+            div.appendChild(returnBtn);
+          }
+
+          // Emprestar para todos se disponível
+          if(data.status === 'available'){
+            const borrowBtn = document.createElement('button');
+            borrowBtn.textContent = 'Emprestar 📚';
+            borrowBtn.style.marginRight = '6px';
+            borrowBtn.onclick = async () => {
+              if(confirm(`Deseja pegar emprestado o livro "${data.title}"?`)){
+                await db.collection('books').doc(id).update({
+                  status:'borrowed',
+                  borrowedBy: currentUser.uid,
+                  borrowedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+              }
+            };
+            div.appendChild(borrowBtn);
+          }
+
+          // Remover livros disponíveis do dono
+          if(data.uid === currentUser.uid && data.status === 'available'){
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remover ❌';
+            removeBtn.style.marginRight = '6px';
+            removeBtn.onclick = async () => {
+              if(confirm('Deseja realmente remover este livro?')){
+                await db.collection('books').doc(id).delete();
+              }
+            };
+            div.appendChild(removeBtn);
           }
         }
 
