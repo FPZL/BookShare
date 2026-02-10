@@ -177,11 +177,12 @@ function listarLivros(){
           });
         }
 
-        // Perfil público
-        div.querySelector('.user-link').onclick = () => {
-          perfilVisitadoUid = data.uid;
+        // Perfil público (corrigido)
+        const userLink = div.querySelector('.user-link');
+        userLink.addEventListener('click', () => {
+          perfilVisitadoUid = userLink.dataset.uid;
           document.querySelector('[data-tab="perfil"]').click();
-        };
+        });
 
         // Botões de ação
         if(currentUser){
