@@ -21,7 +21,6 @@ const bookForm = document.getElementById('book-form');
 const booksDiv = document.getElementById('books');
 const buscaInput = document.getElementById('buscaLivro');
 
-// Perfil
 const perfilNome = document.getElementById('perfil-nome');
 const perfilEmail = document.getElementById('perfil-email');
 const meusLivrosUl = document.getElementById('meus-livros');
@@ -141,7 +140,7 @@ function listarLivros(){
         const div = document.createElement('div');
         div.className = 'book-card';
 
-        // Título, Autor, Descrição
+        // --- Conteúdo do card ---
         const h3 = document.createElement('h3');
         h3.textContent = data.title;
         div.appendChild(h3);
@@ -154,7 +153,6 @@ function listarLivros(){
         desc.textContent = data.description || '';
         div.appendChild(desc);
 
-        // Categoria e Contato
         const cat = document.createElement('p');
         cat.innerHTML = `<strong>Categoria:</strong> ${escapeHtml(data.category||'')}`;
         div.appendChild(cat);
@@ -163,7 +161,6 @@ function listarLivros(){
         cont.innerHTML = `<strong>Contato:</strong> ${escapeHtml(data.contact||'')}`;
         div.appendChild(cont);
 
-        // Status
         const status = document.createElement('p');
         status.textContent = `Status: ${data.status}`;
         div.appendChild(status);
@@ -188,7 +185,6 @@ function listarLivros(){
         }
         div.appendChild(starsDiv);
 
-        // Rating info
         const ratingInfo = document.createElement('div');
         ratingInfo.className = 'rating-info';
         ratingInfo.textContent = `⭐ ${rating.media} (${rating.total})`;
@@ -203,7 +199,6 @@ function listarLivros(){
         userLink.textContent = data.userName;
         userLink.dataset.uid = data.uid;
 
-        // Event listener para abrir perfil
         userLink.addEventListener('click', () => {
           perfilVisitadoUid = userLink.dataset.uid;
           document.querySelector('[data-tab="perfil"]').click();
@@ -212,7 +207,7 @@ function listarLivros(){
         small.appendChild(userLink);
         div.appendChild(small);
 
-        // Botões de ação
+        // --- Botões de ação ---
         if(currentUser){
           // Devolver
           if(data.status === 'borrowed' && data.borrowedBy === currentUser.uid){
