@@ -27,14 +27,76 @@ const perfilEmail = document.getElementById('perfil-email');
 const meusLivrosUl = document.getElementById('meus-livros');
 const historicoUl = document.getElementById('historico-emprestimos');
 
-// Modal denúncia
-const reportModal = document.getElementById('report-modal');
-const reportInfo = document.getElementById('report-info');
-const reportText = document.getElementById('report-text');
-const cancelReport = document.getElementById('cancel-report');
-const sendReport = document.getElementById('send-report');
+// ================= MODAL DENÚNCIA =================
+const modal = document.createElement('div');
+modal.id = 'report-modal';
+modal.style.cssText = `
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+`;
+
+modal.innerHTML = `
+  <div style="
+    background:#fff;
+    padding:20px;
+    border-radius:12px;
+    max-width:420px;
+    width:90%;
+  ">
+    <h3>🚩 Denunciar livro</h3>
+    <p id="report-info"></p>
+    <textarea id="report-text" rows="4"
+      placeholder="Descreva o motivo da denúncia"
+      style="width:100%;padding:8px;border-radius:8px"></textarea>
+    <div style="margin-top:12px;text-align:right">
+      <button id="cancel-report">Cancelar</button>
+      <button id="send-report" style="background:#c62828;color:#fff">
+        Enviar denúncia
+      </button>
+    </div>
+  </div>
+`;
+
+document.body.appendChild(modal);
 
 let reportData = null;
+
+document.getElementById('cancel-report').onclick = () => {
+  modal.style.display = 'none';
+  document.getElementById('report-text').value = '';
+};
+
+document.getElementById('send-report').onclick = () => {
+  const motivo = document.getElementById('report-text').value.trim();
+  if(!motivo) return alert('Descreva o motivo');
+
+  const assunto = encodeURIComponent('Denúncia de livro no BookShare');
+  const corpo = encodeURIComponent(
+`Olá,
+
+Foi realizada uma denúncia no sistema BookShare.
+
+Título: ${reportData.title}
+Autor do livro: ${reportData.author}
+Publicado por: ${reportData.userName}
+UID do usuário: ${reportData.uid}
+ID do livro: ${reportData.id}
+
+Motivo da denúncia:
+${motivo}`
+  );
+
+  window.location.href =
+    `mailto:felipe.lemos@unioeste.br?subject=${assunto}&body=${corpo}`;
+
+  modal.style.display = 'none';
+  document.getElementById('report-text').value = '';
+};
 
 // ================= ABAS =================
 document.querySelectorAll('.tab').forEach(btn => {
@@ -45,7 +107,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
 
-    if (btn.dataset.tab === 'perfil') {
+    if(btn.dataset.tab === 'perfil'){
       perfilVisitadoUid = null;
       carregarPerfil();
     }
@@ -65,38 +127,16 @@ bookForm.parentNode.insertBefore(logoutBtn, bookForm);
 
 const provider = new firebase.auth.GoogleAuthProvider();
 
-loginBtn.onclick = async () => {
-  const result = await auth.signInWithPopup(provider);
-
-  // 🔐 Restrição UNIOESTE (MINHA PARTE)
-  if (!result.user.email.endsWith('@unioeste.br')) {
-    alert('Use apenas email institucional da UNIOESTE');
-    await auth.signOut();
-  }
-};
-
+loginBtn.onclick = () => auth.signInWithPopup(provider);
 logoutBtn.onclick = () => auth.signOut();
 
 // ================= AUTH =================
-auth.onAuthStateChanged(async user => {
+auth.onAuthStateChanged(user => {
   currentUser = user;
 
   loginBtn.style.display = user ? 'none' : 'inline-block';
   logoutBtn.style.display = user ? 'inline-block' : 'none';
   bookForm.style.display = user ? 'block' : 'none';
-
-  // Cria perfil base (MINHA PARTE – não interfere)
-  if (user) {
-    const ref = db.collection('users').doc(user.uid);
-    if (!(await ref.get()).exists) {
-      await ref.set({
-        name: user.displayName,
-        email: user.email,
-        points: 0,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-  }
 
   listarLivros();
 });
@@ -104,7 +144,7 @@ auth.onAuthStateChanged(async user => {
 // ================= ADICIONAR LIVRO =================
 bookForm.addEventListener('submit', async e => {
   e.preventDefault();
-  if (!currentUser) return alert('Faça login');
+  if(!currentUser) return alert('Faça login');
 
   await db.collection('books').add({
     title: title.value.trim(),
@@ -112,10 +152,10 @@ bookForm.addEventListener('submit', async e => {
     category: category.value.trim(),
     contact: contact.value.trim(),
     description: description.value.trim(),
-    status: 'available',
+    status:'available',
     uid: currentUser.uid,
     userName: currentUser.displayName,
-    ratings: {},
+    ratings:{},
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
@@ -123,9 +163,8 @@ bookForm.addEventListener('submit', async e => {
 });
 
 // ================= LISTAR LIVROS =================
-function listarLivros() {
-  db.collection('books')
-    .orderBy('createdAt', 'desc')
+function listarLivros(){
+  db.collection('books').orderBy('createdAt','desc')
     .onSnapshot(snapshot => {
       booksDiv.innerHTML = '';
 
@@ -140,19 +179,17 @@ function listarLivros() {
         div.innerHTML = `
           <h3>${escapeHtml(data.title)}</h3>
           <strong>${escapeHtml(data.author)}</strong>
-          <p>${escapeHtml(data.description || '')}</p>
+          <p>${escapeHtml(data.description||'')}</p>
           <p>Status: ${data.status}</p>
 
           <div class="stars">
             ${[1,2,3,4,5].map(n =>
-              `<span class="star ${
-                currentUser && data.ratings?.[currentUser.uid] >= n ? 'active' : ''
-              }" data-value="${n}">★</span>`
-            ).join('')}
+              `<span class="star ${currentUser && data.ratings?.[currentUser.uid]>=n?'active':''}"
+                data-value="${n}">★</span>`).join('')}
           </div>
 
           <div class="rating-info">
-            ⭐ ${rating.media} (${rating.total} avaliações)
+            ⭐ ${rating.media} (${rating.total})
           </div>
 
           <small>
@@ -163,14 +200,13 @@ function listarLivros() {
           </small>
         `;
 
-        // Avaliação
-        if (currentUser) {
-          div.querySelectorAll('.star').forEach(star => {
-            star.onclick = () => {
+        // Avaliar
+        if(currentUser){
+          div.querySelectorAll('.star').forEach(star=>{
+            star.onclick = () =>
               db.collection('books').doc(id).set({
-                ratings: { [currentUser.uid]: Number(star.dataset.value) }
-              }, { merge: true });
-            };
+                ratings:{[currentUser.uid]:Number(star.dataset.value)}
+              },{merge:true});
           });
         }
 
@@ -180,52 +216,15 @@ function listarLivros() {
           document.querySelector('[data-tab="perfil"]').click();
         };
 
-        // Botões do dono
-        if (currentUser && data.uid === currentUser.uid) {
-          const actions = document.createElement('div');
-          actions.className = 'book-actions';
-
-          const toggleBtn = document.createElement('button');
-          toggleBtn.textContent =
-            data.status === 'available'
-              ? 'Marcar como emprestado'
-              : 'Marcar como devolvido';
-
-          toggleBtn.onclick = async () => {
-            const novo = data.status === 'available' ? 'borrowed' : 'available';
-            await db.collection('books').doc(id).update({ status: novo });
-
-            // Pontos (MINHA PARTE)
-            if (novo === 'borrowed') {
-              await db.collection('users').doc(currentUser.uid).update({
-                points: firebase.firestore.FieldValue.increment(10)
-              });
-            }
-          };
-
-          const delBtn = document.createElement('button');
-          delBtn.textContent = 'Remover';
-          delBtn.onclick = async () => {
-            if (confirm('Remover este livro?')) {
-              await db.collection('books').doc(id).delete();
-            }
-          };
-
-          actions.appendChild(toggleBtn);
-          actions.appendChild(delBtn);
-          div.appendChild(actions);
-        }
-
         // Denúncia
         const reportBtn = document.createElement('button');
         reportBtn.className = 'report-btn';
         reportBtn.textContent = 'Denunciar 🚩';
         reportBtn.onclick = () => {
           reportData = { ...data, id };
-          reportInfo.textContent =
-            `Livro: ${data.title} — Publicado por: ${data.userName}`;
-          reportText.value = '';
-          reportModal.style.display = 'flex';
+          document.getElementById('report-info').textContent =
+            `Livro: ${data.title} — ${data.userName}`;
+          modal.style.display = 'flex';
         };
         div.appendChild(reportBtn);
 
@@ -235,88 +234,47 @@ function listarLivros() {
 }
 
 // ================= PERFIL =================
-function carregarPerfil() {
+function carregarPerfil(){
   const uid = perfilVisitadoUid || currentUser?.uid;
-  if (!uid) return;
+  if(!uid) return;
 
   const meu = currentUser && uid === currentUser.uid;
-
   perfilNome.textContent = meu ? currentUser.displayName : 'Perfil do usuário';
   perfilEmail.textContent = meu ? currentUser.email : 'Email privado';
 
   meusLivrosUl.innerHTML = '';
   historicoUl.innerHTML = '';
 
-  db.collection('books')
-    .where('uid', '==', uid)
-    .get()
-    .then(snapshot => {
-      if (snapshot.empty) {
-        meusLivrosUl.innerHTML = '<li>Nenhum livro publicado</li>';
-      }
-
-      snapshot.forEach(doc => {
+  db.collection('books').where('uid','==',uid).get()
+    .then(snapshot=>{
+      snapshot.forEach(doc=>{
         const d = doc.data();
         meusLivrosUl.innerHTML += `<li>${d.title} (${d.status})</li>`;
-
-        if (meu && d.status === 'borrowed') {
+        if(meu && d.status==='borrowed')
           historicoUl.innerHTML += `<li>Emprestado: ${d.title}</li>`;
-        }
       });
-
-      if (!meu) {
-        historicoUl.innerHTML = '<li>Histórico privado</li>';
-      }
+      if(!meu) historicoUl.innerHTML = '<li>Histórico privado</li>';
     });
 }
 
 // ================= BUSCA =================
 buscaInput.onkeyup = () => {
   const f = buscaInput.value.toLowerCase();
-  document.querySelectorAll('.book-card').forEach(c => {
-    c.style.display = c.textContent.toLowerCase().includes(f) ? 'block' : 'none';
+  document.querySelectorAll('.book-card').forEach(c=>{
+    c.style.display = c.textContent.toLowerCase().includes(f)?'block':'none';
   });
 };
 
-// ================= MODAL DENÚNCIA =================
-cancelReport.onclick = () => reportModal.style.display = 'none';
-
-sendReport.onclick = () => {
-  const motivo = reportText.value.trim();
-  if (!motivo) return alert('Descreva o motivo');
-
-  const assunto = encodeURIComponent('Denúncia de livro no BookShare');
-  const corpo = encodeURIComponent(
-`Livro: ${reportData.title}
-Autor: ${reportData.author}
-Publicado por: ${reportData.userName}
-UID: ${reportData.uid}
-ID do livro: ${reportData.id}
-
-Motivo:
-${motivo}`
-  );
-
-  window.location.href =
-    `mailto:felipe.lemos@unioeste.br?subject=${assunto}&body=${corpo}`;
-
-  reportModal.style.display = 'none';
-};
-
 // ================= AVALIAÇÃO =================
-function calcularMedia(r) {
-  if (!r) return { media: 0, total: 0 };
+function calcularMedia(r){
+  if(!r) return {media:0,total:0};
   const v = Object.values(r);
-  if (!v.length) return { media: 0, total: 0 };
-  return {
-    media: (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1),
-    total: v.length
-  };
+  if(!v.length) return {media:0,total:0};
+  return {media:(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1),total:v.length};
 }
 
-// ================= ESCAPE HTML =================
-function escapeHtml(str) {
-  if (!str) return '';
+// ================= ESCAPE =================
+function escapeHtml(str){
   return str.replace(/[&<>"']/g,
-    s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+    s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
