@@ -141,56 +141,83 @@ function listarLivros(){
         const div = document.createElement('div');
         div.className = 'book-card';
 
-        div.innerHTML = `
-          <h3>${escapeHtml(data.title)}</h3>
-          <strong>${escapeHtml(data.author)}</strong>
-          <p>${escapeHtml(data.description||'')}</p>
-          <p><strong>Categoria:</strong> ${escapeHtml(data.category||'')}</p>
-          <p><strong>Contato:</strong> ${escapeHtml(data.contact||'')}</p>
-          <p>Status: ${data.status}</p>
+        // Título, Autor, Descrição
+        const h3 = document.createElement('h3');
+        h3.textContent = data.title;
+        div.appendChild(h3);
 
-          <div class="stars">
-            ${[1,2,3,4,5].map(n =>
-              `<span class="star ${currentUser && data.ratings?.[currentUser.uid]>=n?'active':''}"
-                data-value="${n}">★</span>`).join('')}
-          </div>
+        const strong = document.createElement('strong');
+        strong.textContent = data.author;
+        div.appendChild(strong);
 
-          <div class="rating-info">
-            ⭐ ${rating.media} (${rating.total})
-          </div>
+        const desc = document.createElement('p');
+        desc.textContent = data.description || '';
+        div.appendChild(desc);
 
-          <small>
-            Adicionado por:
-            <span class="user-link" data-uid="${data.uid}">
-              ${escapeHtml(data.userName)}
-            </span>
-          </small>
-        `;
+        // Categoria e Contato
+        const cat = document.createElement('p');
+        cat.innerHTML = `<strong>Categoria:</strong> ${escapeHtml(data.category||'')}`;
+        div.appendChild(cat);
 
-        // Avaliar
-        if(currentUser){
-          div.querySelectorAll('.star').forEach(star=>{
-            star.onclick = () =>
+        const cont = document.createElement('p');
+        cont.innerHTML = `<strong>Contato:</strong> ${escapeHtml(data.contact||'')}`;
+        div.appendChild(cont);
+
+        // Status
+        const status = document.createElement('p');
+        status.textContent = `Status: ${data.status}`;
+        div.appendChild(status);
+
+        // Estrelas
+        const starsDiv = document.createElement('div');
+        starsDiv.className = 'stars';
+        for(let n=1;n<=5;n++){
+          const span = document.createElement('span');
+          span.className = 'star';
+          if(currentUser && data.ratings?.[currentUser.uid]>=n) span.classList.add('active');
+          span.dataset.value = n;
+          span.textContent = '★';
+          if(currentUser){
+            span.addEventListener('click',()=>{
               db.collection('books').doc(id).set({
-                ratings:{[currentUser.uid]:Number(star.dataset.value)}
+                ratings:{[currentUser.uid]:Number(n)}
               },{merge:true});
-          });
+            });
+          }
+          starsDiv.appendChild(span);
         }
+        div.appendChild(starsDiv);
 
-        // Perfil público (corrigido)
-        const userLink = div.querySelector('.user-link');
+        // Rating info
+        const ratingInfo = document.createElement('div');
+        ratingInfo.className = 'rating-info';
+        ratingInfo.textContent = `⭐ ${rating.media} (${rating.total})`;
+        div.appendChild(ratingInfo);
+
+        // Link do usuário (perfil)
+        const small = document.createElement('small');
+        small.textContent = 'Adicionado por: ';
+
+        const userLink = document.createElement('span');
+        userLink.className = 'user-link';
+        userLink.textContent = data.userName;
+        userLink.dataset.uid = data.uid;
+
+        // Event listener para abrir perfil
         userLink.addEventListener('click', () => {
           perfilVisitadoUid = userLink.dataset.uid;
           document.querySelector('[data-tab="perfil"]').click();
         });
 
+        small.appendChild(userLink);
+        div.appendChild(small);
+
         // Botões de ação
         if(currentUser){
-          // Devolver se emprestado por você
+          // Devolver
           if(data.status === 'borrowed' && data.borrowedBy === currentUser.uid){
             const returnBtn = document.createElement('button');
             returnBtn.textContent = 'Devolver 📖';
-            returnBtn.style.marginRight = '6px';
             returnBtn.onclick = async () => {
               if(confirm(`Deseja marcar o livro "${data.title}" como disponível?`)){
                 await db.collection('books').doc(id).update({
@@ -203,11 +230,10 @@ function listarLivros(){
             div.appendChild(returnBtn);
           }
 
-          // Emprestar para todos se disponível
+          // Emprestar
           if(data.status === 'available'){
             const borrowBtn = document.createElement('button');
             borrowBtn.textContent = 'Emprestar 📚';
-            borrowBtn.style.marginRight = '6px';
             borrowBtn.onclick = async () => {
               if(confirm(`Deseja pegar emprestado o livro "${data.title}"?`)){
                 await db.collection('books').doc(id).update({
@@ -220,11 +246,10 @@ function listarLivros(){
             div.appendChild(borrowBtn);
           }
 
-          // Remover livros disponíveis do dono
+          // Remover
           if(data.uid === currentUser.uid && data.status === 'available'){
             const removeBtn = document.createElement('button');
             removeBtn.textContent = 'Remover ❌';
-            removeBtn.style.marginRight = '6px';
             removeBtn.onclick = async () => {
               if(confirm('Deseja realmente remover este livro?')){
                 await db.collection('books').doc(id).delete();
@@ -234,7 +259,7 @@ function listarLivros(){
           }
         }
 
-        // Botão de denúncia
+        // Denunciar
         const reportBtn = document.createElement('button');
         reportBtn.className = 'report-btn';
         reportBtn.textContent = 'Denunciar 🚩';
