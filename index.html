@@ -1,73 +1,108 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BookShare</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BookShare</title>
 
-<link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css" />
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
 
-<header>
-  <img src="logo.png" alt="Logo do Projeto">
-  <h1>BookShare</h1>
-</header>
+  <!-- HEADER -->
+  <header>
+    <img src="logo.png" alt="Logo do Projeto">
+    <h1>BookShare</h1>
+  </header>
 
-<nav class="tabs">
-  <button class="tab active" data-tab="livros">Livros</button>
-  <button class="tab" data-tab="perfil">Perfil</button>
-</nav>
+  <!-- ABAS -->
+  <nav class="tabs">
+    <button class="tab active" data-tab="livros">Livros</button>
+    <button class="tab" data-tab="perfil">Perfil</button>
+  </nav>
 
-<main>
+  <!-- CONTEÚDO -->
+  <main>
 
-  <!-- LIVROS -->
-  <section id="livros" class="tab-content active">
+    <!-- ABA LIVROS -->
+    <section id="livros" class="tab-content active">
 
-    <section class="add-book">
-      <h2>Adicionar livro</h2>
+      <section class="add-book">
+        <h2>Adicionar livro</h2>
 
-      <form id="book-form">
-        <input id="title" placeholder="Título" required />
-        <input id="author" placeholder="Autor" required />
-        <input id="category" placeholder="Categoria" />
-        <input id="contact" placeholder="Contato" />
-        <textarea id="description" placeholder="Descrição" rows="3"></textarea>
-        <button type="submit">Adicionar</button>
-      </form>
+        <form id="book-form">
+          <input id="title" placeholder="Título" required />
+          <input id="author" placeholder="Autor" required />
+          <input id="category" placeholder="Categoria" />
+          <input id="contact" placeholder="Contato (e-mail ou telefone)" />
+          <textarea
+            id="description"
+            placeholder="Descrição adicional"
+            rows="3"></textarea>
+          <button type="submit">Adicionar</button>
+        </form>
+      </section>
+
+      <section class="books-list">
+        <h2>Livros para empréstimo</h2>
+        <input
+          type="text"
+          id="buscaLivro"
+          placeholder="Buscar por título, autor ou descrição..." />
+        <div id="books"></div>
+      </section>
+
     </section>
 
-    <section class="books-list">
-      <h2>Livros para empréstimo</h2>
-      <input type="text" id="buscaLivro" placeholder="Buscar livros...">
-      <div id="books"></div>
+    <!-- ABA PERFIL -->
+    <section id="perfil" class="tab-content">
+
+      <div class="profile-card">
+        <h2>Perfil</h2>
+
+        <p><strong>Nome:</strong> <span id="perfil-nome"></span></p>
+        <p><strong>Email:</strong> <span id="perfil-email"></span></p>
+
+        <h3>📚 Livros publicados</h3>
+        <ul id="meus-livros"></ul>
+
+        <h3>🔄 Histórico de empréstimos</h3>
+        <ul id="historico-emprestimos"></ul>
+      </div>
+
     </section>
 
-  </section>
+  </main>
 
-  <!-- PERFIL -->
-  <section id="perfil" class="tab-content">
-    <div class="profile-card">
-      <h2>Meu Perfil</h2>
-      <p><strong>Nome:</strong> <span id="perfil-nome"></span></p>
-      <p><strong>Email:</strong> <span id="perfil-email"></span></p>
+  <!-- MODAL DE DENÚNCIA -->
+  <div id="report-modal" class="modal">
+    <div class="modal-content">
+      <h3>🚩 Denunciar livro</h3>
 
-      <h3>📚 Livros publicados</h3>
-      <ul id="meus-livros"></ul>
+      <p id="report-info"></p>
 
-      <h3>🔄 Histórico de empréstimos</h3>
-      <ul id="historico-emprestimos"></ul>
+      <textarea
+        id="report-text"
+        rows="4"
+        placeholder="Descreva o motivo da denúncia">
+      </textarea>
+
+      <div class="modal-actions">
+        <button id="cancel-report">Cancelar</button>
+        <button id="send-report" class="danger">
+          Enviar denúncia
+        </button>
+      </div>
     </div>
-  </section>
+  </div>
 
-</main>
-
-<script src="app.js"></script>
+  <!-- JS -->
+  <script src="app.js"></script>
 </body>
 </html>
